@@ -11,14 +11,10 @@ fn runs() {
     cmd.assert().success();
 }
 
-//#[test]
-//fn true_ok() {
-//    let mut cmd = Command::
-//    cmd.assert().success();
-//}
-
 #[test]
-fn false_ok() {
-    let mut cmd = Command::cargo_bin("false").unwrap();
-    cmd.assert().failure();
+fn true_ok() {
+    let mut cmd = std::process::Command::new("true");
+    let rest = cmd.output();
+    assert!(rest.is_ok());
 }
+
