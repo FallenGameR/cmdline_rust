@@ -12,8 +12,8 @@ fn runs() {
 }
 
 #[test]
-fn true_ok() {
-    let mut cmd = std::process::Command::new("true");
+fn ls_ok() {
+    let mut cmd = std::process::Command::new("ls");
     let rest = cmd.output();
     assert!(rest.is_ok());
 }
