@@ -13,12 +13,6 @@ fn ls_ok() {
 }
 
 #[test]
-fn runs() {
-    let mut cmd = Command::cargo_bin("hello_cargo").unwrap();
-    cmd.assert().success();
-}
-
-#[test]
 fn true_ok() {
     let mut cmd = Command::cargo_bin("true").unwrap();
     cmd.assert().success();
@@ -28,5 +22,11 @@ fn true_ok() {
 fn false_ok() {
     let mut cmd = Command::cargo_bin("false").unwrap();
     cmd.assert().failure();
+}
+
+#[test]
+fn runs() {
+    let mut cmd = Command::cargo_bin("hello_cargo").unwrap();
+    cmd.assert().success().stdout("Hello, world!\n");
 }
 
