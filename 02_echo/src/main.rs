@@ -5,7 +5,7 @@ fn main() {
         .version("1.0")
         .author("FallenGameR")
         .about("Prints arguments to the standard output")
-        .args(&[
+        .args([
             arg!(<text> ... "Input text"),
             arg!(-n --newline "Do not print newline")
         ])
