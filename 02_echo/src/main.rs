@@ -6,7 +6,7 @@ fn main() {
         .author("FallenGameR")
         .about("Prints arguments to the standard output")
         .args(&[
-            arg!(<TEXT> "Input text"),
+            arg!(<TEXT> ... "Input text"),
             arg!(-n --newline "Do not print newline")
         ])
         .get_matches();
