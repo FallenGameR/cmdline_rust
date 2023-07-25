@@ -14,6 +14,8 @@ fn main() {
     let text: Vec<String> = matches.remove_many("text").expect("No text provided").collect();
     let newline = !matches.get_flag("no_newline");
 
+    // That difference can be spotted only in bash
+    // pwsh 7.3 always adds newline even if you redirect output to a file or a variable
     let ending = if newline { "\n" } else { "" };
     print!("{}{}", text.join(" "), ending);
 }
