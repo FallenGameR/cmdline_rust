@@ -21,9 +21,19 @@ fn runs() -> TestResult {
 
 #[test]
 fn hello1() -> TestResult {
-    let path = "tests/expected/hello1.txt";
+    run(&vec!["Hello there"], "tests/expected/hello1.txt")?;
+    Ok(())
+}
+
+#[test]
+fn hello2() -> TestResult {
+    run(&vec!["Hello", "there"], "tests/expected/hello2.txt")?;
+    Ok(())
+}
+
+fn run(args: &[&str], path: &str) -> TestResult {
     let expected = fs::read_to_string(path)?;
     let mut cmd = Command::cargo_bin("echo")?;
-    cmd.arg("Hello there").assert().success().stdout(expected);
+    cmd.args(args).assert().success().stdout(expected);
     Ok(())
 }
