@@ -11,8 +11,8 @@ pub struct Config {
     number_nonblank_lines: bool,
 }
 
-pub fn run () -> MyResult<()> {
-    println!("Hello, world!");
+pub fn run (config: Config) -> MyResult<()> {
+    dbg!(&config);
     Ok(())
 }
 
@@ -24,7 +24,7 @@ pub fn get_args() -> MyResult<Config> {
         .args([
             arg!(<files> ... "Input files to concatenate"),
             arg!(-n --number_lines "Add line numbers to output"),
-            arg!(-b --number_nonblank_lines "Add line numbers only to nonblack lines"),
+            arg!(-b --number_nonblank_lines "Number only nonblack lines"),
         ])
         .get_matches();
 
