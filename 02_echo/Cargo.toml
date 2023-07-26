@@ -7,3 +7,7 @@ edition = "2021"
 
 [dependencies]
 clap = "4.3.19"
+
+[dev-dependencies]
+assert_cmd = "2.0.12"
+predicates = "3.0.3"
