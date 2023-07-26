@@ -11,8 +11,11 @@ pub struct Config {
     number_nonblank_lines: bool,
 }
 
+// cargo run -- -n (ls .\tests\inputs\*.txt)
 pub fn run(config: Config) -> MyResult<()> {
-    dbg!(&config);
+    for path in config.files {
+        println!("{} ", path);
+    }
     Ok(())
 }
 
