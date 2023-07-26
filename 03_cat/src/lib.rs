@@ -12,6 +12,8 @@ pub struct Config {
 }
 
 // cargo run -- -n (ls .\tests\inputs\*.txt)
+// cargo run -- -n (walker .\tests\inputs\)
+// cargo run -- -n (walker .\tests\inputs\ -a)
 pub fn run(config: Config) -> MyResult<()> {
     for path in config.files {
         println!("{} ", path);
