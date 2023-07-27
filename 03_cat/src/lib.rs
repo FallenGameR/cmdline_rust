@@ -35,10 +35,10 @@ fn process(mut reader: Box<dyn BufRead>, config: &Config) {
 
         if config.number_lines {
             index += 1;
-            print!("{:>6}     ", index);
+            print!("{:>6}\t", index);
         } else if config.number_nonblank_lines && !buf.trim().is_empty() {
             index += 1;
-            print!("{:>6}     ", index);
+            print!("{:>6}\t", index);
         }
 
         print!("{}", buf);
