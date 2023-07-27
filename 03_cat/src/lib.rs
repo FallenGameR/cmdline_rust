@@ -16,7 +16,11 @@ pub struct Config {
 // cargo run -- -n (walker .\tests\inputs\ -a)
 pub fn run(config: Config) -> DynErrorResult<()> {
     for path in config.files {
-        println!("{} ", path);
+        println!("Processing {}", path);
+        match open(&path) {
+            Err(error) => eprintln!("  Failed to open file {}, error {}", path, error),
+            Ok(_) => println!("  Opened {}", path),
+        }
     }
     Ok(())
 }
