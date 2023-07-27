@@ -44,7 +44,7 @@ fn gen_missing_file() -> String {
 #[test]
 fn skips_bad_file() -> TestResult {
     let missing = gen_missing_file();
-    let expected = "The system cannot find the file specified";
+    let expected = format!("{}.*\\bos error 2\\b", missing);
     Command::cargo_bin(PRG)?
         .arg(&missing)
         .assert()
