@@ -15,14 +15,35 @@ pub struct Config {
 // cargo run -- -n (walker .\tests\inputs\)
 // cargo run -- -n (walker .\tests\inputs\ -a)
 pub fn run(config: Config) -> DynErrorResult<()> {
-    for path in config.files {
-        println!("Processing {}", path);
+    for path in &config.files {
         match open(&path) {
-            Err(error) => eprintln!("  Failed to open file {}, error {}", path, error),
-            Ok(_) => println!("  Opened {}", path),
+            Ok(reader) => process(reader, &config),
+            Err(error) => eprintln!("Can't open file {}, error {}", path, error),
         }
     }
     Ok(())
+}
+
+fn process(mut reader: Box<dyn BufRead>, config: &Config) {
+    let mut buf = String::new();
+    let mut index = 0;
+
+    while let Ok(read_bytes) = reader.read_line(&mut buf) {
+        if read_bytes == 0 {
+            break;
+        }
+
+        if config.number_lines {
+            index += 1;
+            print!("{:>2}  ", index);
+        } else if config.number_nonblank_lines && !buf.trim().is_empty() {
+            index += 1;
+            print!("{:>2}  ", index);
+        }
+
+        print!("{}", buf);
+        buf.clear();
+    }
 }
 
 pub fn get_args() -> DynErrorResult<Config> {
