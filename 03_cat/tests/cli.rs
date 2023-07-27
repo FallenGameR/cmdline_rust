@@ -25,7 +25,7 @@ fn usage() -> TestResult {
 }
 
 // ------------------------------------------------------------------------------------
-fn gen_bad_file() -> String {
+fn gen_missing_file() -> String {
     loop {
         let filename: String = rand::thread_rng()
             .sample_iter(&Alphanumeric)
@@ -33,6 +33,7 @@ fn gen_bad_file() -> String {
             .map(char::from)
             .collect();
 
+        // Missing file would have an error
         if fs::metadata(&filename).is_err() {
             return filename;
         }
@@ -42,10 +43,10 @@ fn gen_bad_file() -> String {
 // ------------------------------------------------------------------------------------
 #[test]
 fn skips_bad_file() -> TestResult {
-    let bad = gen_bad_file();
-    let expected = format!("{}: .* [(]os error 2[)]", bad);
+    let missing = gen_missing_file();
+    let expected = "The system cannot find the file specified";
     Command::cargo_bin(PRG)?
-        .arg(&bad)
+        .arg(&missing)
         .assert()
         .success()
         .stderr(predicate::str::is_match(expected)?);
