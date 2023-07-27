@@ -1,8 +1,8 @@
-use std::error::Error;
+use std::{error::Error, io::{BufRead, BufReader}};
 
 use clap::{arg, Command};
 
-type MyResult<T> = Result<T, Box<dyn Error>>;
+type DynErrorResult<T> = Result<T, Box<dyn Error>>;
 
 #[derive(Debug)]
 pub struct Config {
@@ -14,14 +14,14 @@ pub struct Config {
 // cargo run -- -n (ls .\tests\inputs\*.txt)
 // cargo run -- -n (walker .\tests\inputs\)
 // cargo run -- -n (walker .\tests\inputs\ -a)
-pub fn run(config: Config) -> MyResult<()> {
+pub fn run(config: Config) -> DynErrorResult<()> {
     for path in config.files {
         println!("{} ", path);
     }
     Ok(())
 }
 
-pub fn get_args() -> MyResult<Config> {
+pub fn get_args() -> DynErrorResult<Config> {
     let mut matches = Command::new("cat")
         .version("1.0")
         .author("FallenGameR")
@@ -43,4 +43,11 @@ pub fn get_args() -> MyResult<Config> {
         number_lines: matches.get_flag("number_lines"),
         number_nonblank_lines: matches.get_flag("number_nonblank_lines"),
     })
+}
+
+fn open(path: &str) -> DynErrorResult<Box<dyn BufRead>> {
+    match path {
+        "-" => Ok(Box::new(BufReader::new(std::io::stdin()))),
+        _ => Ok(Box::new(BufReader::new(std::fs::File::open(path)?)))
+    }
 }
