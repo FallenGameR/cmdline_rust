@@ -34,7 +34,7 @@ pub fn get_args() -> DynErrorResult<Config> {
             .collect(),
         lines: matches
             .remove_one("lines")
-            .expect("Number of lines to show is a required parameter"),
+            .expect("No number of lines provided"),
         bytes: matches
             .remove_one("bytes"),
     })
