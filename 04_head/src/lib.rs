@@ -7,21 +7,19 @@ type DynErrorResult<T> = Result<T, Box<dyn Error>>;
 #[derive(Debug)]
 pub struct Config {
     files: Vec<String>,
-    number_lines: bool,
-    number_nonblank_lines: bool,
+    lines: usize,
+    bytes: Option<usize>,
 }
 
 pub fn get_args() -> DynErrorResult<Config> {
-    let mut matches = Command::new("cat")
+    let mut matches = Command::new("head")
         .version("1.0")
         .author("FallenGameR")
-        .about("Concatenates files and optionally add line numbers")
+        .about("Prints begining of files for a preview")
         .args([
-            arg!([files] ... "Input files to concatenate, stdin is -").default_value("-"),
-            arg!(-n --number_lines "Add line numbers to output")
-                .conflicts_with("number_nonblank_lines"),
-            arg!(-b --number_nonblank_lines "Number only nonblack lines")
-                .conflicts_with("number_lines"),
+            arg!([files] ... "Input files to preview, stdin is -").default_value("-"),
+            arg!(-l --lines "Number of lines to show").is_required_set().default_value(10),
+            arg!(-b --bytes "Number of bytes to show"),
         ])
         .get_matches();
 
@@ -30,8 +28,8 @@ pub fn get_args() -> DynErrorResult<Config> {
             .remove_many("files")
             .expect("No file paths provided")
             .collect(),
-        number_lines: matches.get_flag("number_lines"),
-        number_nonblank_lines: matches.get_flag("number_nonblank_lines"),
+        lines: matches.get_one("lines").expect("Lines must be set"),
+        bytes: matches.get_one("bytes"),
     })
 }
 
@@ -56,23 +54,4 @@ fn open(path: &str) -> DynErrorResult<Box<dyn BufRead>> {
 }
 
 fn process(mut reader: Box<dyn BufRead>, config: &Config) {
-    let mut buf = String::new();
-    let mut index = 0;
-
-    while let Ok(read_bytes) = reader.read_line(&mut buf) {
-        if read_bytes == 0 {
-            break;
-        }
-
-        if config.number_lines {
-            index += 1;
-            print!("{:>6}\t", index);
-        } else if config.number_nonblank_lines && !buf.trim().is_empty() {
-            index += 1;
-            print!("{:>6}\t", index);
-        }
-
-        print!("{}", buf);
-        buf.clear();
-    }
 }
