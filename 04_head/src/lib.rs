@@ -1,5 +1,4 @@
 use std::{error::Error, io::{BufRead, BufReader}};
-
 use clap::{arg, Command};
 
 type DynErrorResult<T> = Result<T, Box<dyn Error>>;
@@ -41,7 +40,6 @@ pub fn get_args() -> DynErrorResult<Config> {
 }
 
 // cargo run -- -n (ls .\tests\inputs\*.txt)
-// cargo run -- -n (walker .\tests\inputs\)
 // cargo run -- -n (walker .\tests\inputs\ -a)
 pub fn run(config: Config) -> DynErrorResult<()> {
     println!("{:?}", config);
