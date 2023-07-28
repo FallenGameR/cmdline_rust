@@ -17,9 +17,13 @@ pub fn get_args() -> DynErrorResult<Config> {
         .author("FallenGameR")
         .about("Prints begining of files for a preview")
         .args([
-            arg!([files] ... "Input files to preview, stdin is -").default_value("-"),
-            arg!(-l --lines "Number of lines to show").is_required_set().default_value(10),
-            arg!(-b --bytes "Number of bytes to show"),
+            arg!([files] ... "Files to preview, stdin is -")
+                .default_value("-"),
+            arg!(-l --lines <line_count> "Number of lines to show")
+                .value_parser(clap::value_parser!(usize))
+                .default_value("10"),
+            arg!(-b --bytes <byte_count> "Number of bytes to show")
+                .value_parser(clap::value_parser!(usize)),
         ])
         .get_matches();
 
@@ -28,8 +32,11 @@ pub fn get_args() -> DynErrorResult<Config> {
             .remove_many("files")
             .expect("No file paths provided")
             .collect(),
-        lines: matches.get_one("lines").expect("Lines must be set"),
-        bytes: matches.get_one("bytes"),
+        lines: matches
+            .remove_one("lines")
+            .expect("Number of lines to show is a required parameter"),
+        bytes: matches
+            .remove_one("bytes"),
     })
 }
 
@@ -37,12 +44,15 @@ pub fn get_args() -> DynErrorResult<Config> {
 // cargo run -- -n (walker .\tests\inputs\)
 // cargo run -- -n (walker .\tests\inputs\ -a)
 pub fn run(config: Config) -> DynErrorResult<()> {
+    println!("{:?}", config);
+
     for path in &config.files {
         match open(&path) {
             Ok(reader) => process(reader, &config),
             Err(error) => eprintln!("Can't open file {}, error {}", path, error),
         }
     }
+
     Ok(())
 }
 
