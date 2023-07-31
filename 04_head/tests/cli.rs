@@ -9,7 +9,7 @@ use std::{
 
 type TestResult = Result<(), Box<dyn Error>>;
 
-const PRG: &str = "headr";
+const PRG: &str = "head";
 const EMPTY: &str = "./tests/inputs/empty.txt";
 const ONE: &str = "./tests/inputs/one.txt";
 const TWO: &str = "./tests/inputs/two.txt";
