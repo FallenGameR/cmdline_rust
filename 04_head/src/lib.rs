@@ -16,7 +16,7 @@ pub fn get_args() -> DynErrorResult<Config> {
         .author("FallenGameR")
         .about("Prints begining of files for a preview")
         .args([
-            arg!([files] ... "Files to preview, stdin is -")
+            arg!([FILES] ... "Files to preview, stdin is -")
                 .default_value("-"),
             arg!(-n --lines <LINES> "Number of lines to show")
                 .value_parser(clap::value_parser!(usize))
@@ -64,4 +64,5 @@ fn open(path: &str) -> DynErrorResult<Box<dyn BufRead>> {
 }
 
 fn process(mut reader: Box<dyn BufRead>, config: &Config) {
+    // File, BufReader String::from_utf8_lossy
 }
