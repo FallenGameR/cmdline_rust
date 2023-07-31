@@ -18,7 +18,7 @@ pub fn get_args() -> DynErrorResult<Config> {
         .args([
             arg!([files] ... "Files to preview, stdin is -")
                 .default_value("-"),
-            arg!(-l --lines <line_count> "Number of lines to show")
+            arg!(-n --lines <line_count> "Number of lines to show")
                 .value_parser(clap::value_parser!(usize))
                 .default_value("10"),
             arg!(-b --bytes <byte_count> "Number of bytes to show")
@@ -47,7 +47,7 @@ pub fn run(config: Config) -> DynErrorResult<()> {
     for path in &config.files {
         match open(&path) {
             Ok(reader) => process(reader, &config),
-            Err(error) => eprintln!("Can't open file {}, error {}", path, error),
+            Err(error) => eprintln!("Can't open file '{}', error {}", path, error),
         }
     }
 
