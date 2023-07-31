@@ -20,9 +20,11 @@ pub fn get_args() -> DynErrorResult<Config> {
                 .default_value("-"),
             arg!(-n --lines <line_count> "Number of lines to show")
                 .value_parser(clap::value_parser!(usize))
-                .default_value("10"),
+                .default_value("10")
+                .conflicts_with("bytes"),
             arg!(-b --bytes <byte_count> "Number of bytes to show")
-                .value_parser(clap::value_parser!(usize)),
+                .value_parser(clap::value_parser!(usize))
+                .conflicts_with("lines"),
         ])
         .get_matches();
 
