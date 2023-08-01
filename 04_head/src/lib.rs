@@ -1,6 +1,9 @@
 use std::{error::Error, io::{BufRead, BufReader}};
 use clap::{arg, Command};
 
+const PAGE_SIZE: usize = 4096;
+const BUFFER_SIZE: usize = PAGE_SIZE * 2;
+
 type DynErrorResult<T> = Result<T, Box<dyn Error>>;
 
 #[derive(Debug)]
@@ -61,9 +64,6 @@ fn open(path: &str) -> DynErrorResult<Box<dyn BufRead>> {
     }
 }
 
-const PAGE_SIZE: usize = 4096;
-const BUFFER_SIZE: usize = PAGE_SIZE * 2;
-
 fn process_file(path: &str, mut reader: Box<dyn BufRead>, config: &Config) {
     let buffer_size = config.bytes.unwrap_or(BUFFER_SIZE);
     let mut buffer = vec![0; buffer_size];
@@ -79,6 +79,10 @@ fn process_buffer(buffer: &[u8], config: &Config) {
     let mut line_count = 0;
 
     for char in text.chars() {
+        if char == '\0' {
+            break;
+        }
+
         print!("{}", char);
 
         if char == '\n' {
