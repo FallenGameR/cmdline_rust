@@ -30,7 +30,7 @@ pub fn get_args() -> DynErrorResult<Config> {
 
     Ok(Config {
         files: matches
-            .remove_many("files")
+            .remove_many("FILES")
             .expect("No file paths provided")
             .collect(),
         lines: matches
@@ -44,8 +44,6 @@ pub fn get_args() -> DynErrorResult<Config> {
 // cargo run -- -n (ls .\tests\inputs\*.txt)
 // cargo run -- -n (walker .\tests\inputs\ -a)
 pub fn run(config: Config) -> DynErrorResult<()> {
-    println!("{:?}", config);
-
     for path in &config.files {
         match open(&path) {
             Ok(reader) => process_file(&path, reader, &config),
@@ -78,9 +76,17 @@ fn process_file(path: &str, mut reader: Box<dyn BufRead>, config: &Config) {
 
 fn process_buffer(buffer: &[u8], config: &Config) {
     let text = String::from_utf8_lossy(buffer);
-    let lines = text.lines().take(config.lines);
+    let mut line_count = 0;
 
-    for line in lines {
-        println!("{}", line);
+    for char in text.chars() {
+        print!("{}", char);
+
+        if char == '\n' {
+            line_count += 1;
+        }
+
+        if line_count >= config.lines {
+            break;
+        }
     }
 }
