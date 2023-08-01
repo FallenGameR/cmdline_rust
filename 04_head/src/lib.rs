@@ -47,10 +47,20 @@ pub fn get_args() -> DynErrorResult<Config> {
 // cargo run -- -n (ls .\tests\inputs\*.txt)
 // cargo run -- -n (walker .\tests\inputs\ -a)
 pub fn run(config: Config) -> DynErrorResult<()> {
+    let mutifile_handling = config.files.len() > 1;
+
     for path in &config.files {
+        if mutifile_handling {
+            println!("==> {} <==", path);
+        }
+
         match open(&path) {
             Ok(reader) => process_file(&path, reader, &config),
             Err(error) => eprintln!("Can't open file '{}', error {}", &path, error),
+        }
+
+        if mutifile_handling {
+            println!();
         }
     }
 
