@@ -55,11 +55,11 @@ pub fn run(config: Config) -> DynErrorResult<()> {
             println!();
         }
 
+        entry_separator_needed = true;
+
         if mutifile_handling {
             println!("==> {} <==", path);
         }
-
-        entry_separator_needed = true;
 
         match open(&path) {
             Ok(reader) => process_file(&path, reader, &config),
@@ -82,9 +82,7 @@ fn process_file(path: &str, mut reader: Box<dyn BufRead>, config: &Config) {
     let mut buffer = vec![0; buffer_size];
 
     match reader.read(&mut buffer) {
-        Ok(len) => {
-            process_buffer(&buffer[0..len], config);
-        },
+        Ok(len) => process_buffer(&buffer[0..len], config),
         Err(error) => eprintln!("Can't open file '{}', error {}", path, error),
     }
 }
