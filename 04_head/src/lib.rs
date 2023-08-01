@@ -48,19 +48,22 @@ pub fn get_args() -> DynErrorResult<Config> {
 // cargo run -- -n (walker .\tests\inputs\ -a)
 pub fn run(config: Config) -> DynErrorResult<()> {
     let mutifile_handling = config.files.len() > 1;
+    let mut entry_separator_needed = false;
 
     for path in &config.files {
+        if entry_separator_needed {
+            println!();
+        }
+
         if mutifile_handling {
             println!("==> {} <==", path);
         }
 
+        entry_separator_needed = true;
+
         match open(&path) {
             Ok(reader) => process_file(&path, reader, &config),
             Err(error) => eprintln!("Can't open file '{}', error {}", &path, error),
-        }
-
-        if mutifile_handling {
-            println!();
         }
     }
 
