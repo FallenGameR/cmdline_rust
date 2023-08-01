@@ -346,7 +346,7 @@ fn ten_c2() -> TestResult {
 
 #[test]
 fn ten_c4() -> TestResult {
-    run(&[TEN, "-c", "4"], "tests/expected/ten.txt.c4.out")
+    run(&[TEN, "-c", "5"], "tests/expected/ten.txt.c4.out")
 }
 
 #[test]
@@ -371,7 +371,7 @@ fn ten_c2_stdin() -> TestResult {
 
 #[test]
 fn ten_c4_stdin() -> TestResult {
-    run_stdin(&["-c", "4"], TEN, "tests/expected/ten.txt.c4.out")
+    run_stdin(&["-c", "5"], TEN, "tests/expected/ten.txt.c4.out")
 }
 
 // --------------------------------------------------
