@@ -81,6 +81,9 @@ fn process_file(path: &str, mut reader: Box<dyn BufRead>, config: &Config) {
     let buffer_size = config.bytes.unwrap_or(BUFFER_SIZE);
     let mut buffer = vec![0; buffer_size];
 
+    // Alternatively we could do the following:
+    // reader.bytes().take(buffer_size as u64);
+
     match reader.read(&mut buffer) {
         Ok(len) => process_buffer(&buffer[0..len], config),
         Err(error) => eprintln!("Can't open file '{}', error {}", path, error),
