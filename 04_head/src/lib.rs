@@ -64,5 +64,13 @@ fn open(path: &str) -> DynErrorResult<Box<dyn BufRead>> {
 }
 
 fn process(mut reader: Box<dyn BufRead>, config: &Config) {
-    // File, BufReader String::from_utf8_lossy
+    let mut buffer = [0; 10];
+
+    reader.read_exact(&mut buffer);
+    reader.read(&mut buffer);
+    reader.read_vectored(&mut buffer);
+
+    let byte_buff = vec![240, 159, 146, 150];
+    String::from_utf8_lossy(&mut byte_buff);
+
 }
