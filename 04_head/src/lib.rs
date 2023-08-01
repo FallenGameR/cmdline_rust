@@ -48,8 +48,8 @@ pub fn run(config: Config) -> DynErrorResult<()> {
 
     for path in &config.files {
         match open(&path) {
-            Ok(reader) => process(reader, &config),
-            Err(error) => eprintln!("Can't open file '{}', error {}", path, error),
+            Ok(reader) => process_file(&path, reader, &config),
+            Err(error) => eprintln!("Can't open file '{}', error {}", &path, error),
         }
     }
 
@@ -63,14 +63,24 @@ fn open(path: &str) -> DynErrorResult<Box<dyn BufRead>> {
     }
 }
 
-fn process(mut reader: Box<dyn BufRead>, config: &Config) {
-    let mut buffer = [0; 10];
+const PAGE_SIZE: usize = 4096;
+const BUFFER_SIZE: usize = PAGE_SIZE * 2;
 
-    reader.read_exact(&mut buffer);
-    reader.read(&mut buffer);
-    reader.read_vectored(&mut buffer);
+fn process_file(path: &str, mut reader: Box<dyn BufRead>, config: &Config) {
+    let buffer_size = config.bytes.unwrap_or(BUFFER_SIZE);
+    let mut buffer = vec![0; buffer_size];
 
-    let byte_buff = vec![240, 159, 146, 150];
-    String::from_utf8_lossy(&mut byte_buff);
+    match reader.read(&mut buffer) {
+        Ok(_) => process_buffer(&buffer, config),
+        Err(error) => eprintln!("Can't open file '{}', error {}", path, error),
+    }
+}
 
+fn process_buffer(buffer: &[u8], config: &Config) {
+    let text = String::from_utf8_lossy(buffer);
+    let lines = text.lines().take(config.lines);
+
+    for line in lines {
+        println!("{}", line);
+    }
 }
