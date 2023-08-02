@@ -149,17 +149,18 @@ mod tests {
     use std::io::Cursor;
 
     #[test]
-    fn test_count() {
+    fn test_stats() {
         let text = "I don't want the world. I just want your half.\r\n";
-        let info = process_stats(Cursor::new(text));
-        assert!(info.is_ok());
+        let stats = process_stats(Cursor::new(text));
+
+        assert!(stats.is_ok());
         let expected = Stats {
             lines: 1,
             words: 10,
             chars: 48,
             bytes: 48,
         };
-        assert_eq!(info.unwrap(), expected);
+        assert_eq!(stats.unwrap(), expected);
     }
 
     #[test]
