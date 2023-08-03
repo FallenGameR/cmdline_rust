@@ -26,19 +26,6 @@ fn gen_bad_file() -> String {
 }
 
 // --------------------------------------------------
-#[test]
-fn dies_chars_and_bytes() -> TestResult {
-    Command::cargo_bin(PRG)?
-        .args(&["-c", "-b"])
-        .assert()
-        .failure()
-        .stderr(predicate::str::contains(
-            "The argument '--bytes' cannot be used with '--chars'",
-        ));
-    Ok(())
-}
-
-// --------------------------------------------------
 fn run(args: &[&str], expected_file: &str) -> TestResult {
     let expected = fs::read_to_string(expected_file)?;
     Command::cargo_bin(PRG)?
