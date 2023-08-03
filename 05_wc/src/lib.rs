@@ -57,14 +57,21 @@ pub fn get_args() -> DynErrorResult<Config> {
         bytes: matches.get_flag("bytes"),
     };
 
-    // If no flags are provided, provide backward compatible mode of flags except chars
-    // (nowadays chars and bytes are different, in the original program bytes were counted
-    // as -c meaning chars, but since then we have UTF-8 and the sane default would be to list
-    // all and update tests, but first let's make tests pass)
+    // If no flags are provided, use all flags
+    //
+    // That is not backward compatible since wc was written in a day when chars and bytes
+    // meant the same (and that is reflected in the parameter name -c for byte count).
+    // Then Unicode came and suddenly there was a need to distinguish between bytes and chars.
+    // -c was occupied and thus -m was added for bytes. For backward compatible reasons
+    // 3 output column remained and that made the last column ambiguous.
+    //
+    // Nowadays UTF-8 is common and if we don't want to be backward compatible and instead
+    // make wc program anew we should use -b for bytes and -c for chars and by default output
+    // 4 columns to solve the ambiguity.
     if !config.lines && !config.words && !config.chars && !config.bytes {
         config.lines = true;
         config.words = true;
-        config.chars = false;
+        config.chars = true;
         config.bytes = true;
     }
 
