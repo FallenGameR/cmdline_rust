@@ -57,11 +57,14 @@ pub fn get_args() -> DynErrorResult<Config> {
         bytes: matches.get_flag("bytes"),
     };
 
-    // If no flags are provided, default to all flags are on
+    // If no flags are provided, provide backward compatible mode of flags except chars
+    // (nowadays chars and bytes are different, in the original program bytes were counted
+    // as -c meaning chars, but since then we have UTF-8 and the sane default would be to list
+    // all and update tests, but first let's make tests pass)
     if !config.lines && !config.words && !config.chars && !config.bytes {
         config.lines = true;
         config.words = true;
-        config.chars = true;
+        config.chars = false;
         config.bytes = true;
     }
 
