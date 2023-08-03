@@ -94,6 +94,7 @@ fn open(path: &str) -> DynErrorResult<Box<dyn BufRead>> {
     }
 }
 
+
 fn process_file(path: &str, mut reader: Box<dyn BufRead>, config: &Config) {
     /*
     let buffer_size = config.bytes.unwrap_or(BUFFER_SIZE);
@@ -109,30 +110,19 @@ fn process_file(path: &str, mut reader: Box<dyn BufRead>, config: &Config) {
     */
 }
 
-fn process_stats(mut file: impl BufRead) -> DynErrorResult<Stats> {
-    /*
-    let text = String::from_utf8_lossy(buffer);
-    let mut line_count = 0;
+fn process_stats(reader: impl BufRead) -> DynErrorResult<Stats> {
+    let mut result = Stats { lines: 0, words: 0, bytes: 0, chars: 0 };
 
-    for char in text.chars() {
-        print!("{}", char);
+    for line in reader.lines() {
+        let line = line?;
 
-        if char == '\n' {
-            line_count += 1;
-        }
-
-        if line_count >= config.lines {
-            break;
-        }
+        result.bytes += line.len();
+        result.chars += line.chars().count();
+        result.words += line.split_whitespace().count();
+        result.lines += 1;
     }
-    */
 
-    Ok(Stats {
-        lines: 0,
-        words: 0,
-        bytes: 0,
-        chars: 0,
-    })
+    Ok(result)
 }
 
 fn format_field(value: usize, show: bool) -> String {
