@@ -118,7 +118,7 @@ fn process_stats(mut reader: impl BufRead) -> DynErrorResult<Stats> {
 fn output_stats(stats: &Stats, name: &str, config: &Config)
 {
     println!(
-        "{}{}{}{}{}",
+        "{}{}{}{}        {}",
         format_field(stats.lines, config.lines),
         format_field(stats.words, config.words),
         format_field(stats.chars, config.chars),

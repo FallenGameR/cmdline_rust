@@ -5,7 +5,7 @@ use std::fs;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
-const PRG: &str = "wcr";
+const PRG: &str = "wc";
 const EMPTY: &str = "tests/inputs/empty.txt";
 const FOX: &str = "tests/inputs/fox.txt";
 const ATLAMAL: &str = "tests/inputs/atlamal.txt";
@@ -29,7 +29,7 @@ fn gen_bad_file() -> String {
 #[test]
 fn dies_chars_and_bytes() -> TestResult {
     Command::cargo_bin(PRG)?
-        .args(&["-m", "-c"])
+        .args(&["-c", "-b"])
         .assert()
         .failure()
         .stderr(predicate::str::contains(
@@ -53,7 +53,7 @@ fn run(args: &[&str], expected_file: &str) -> TestResult {
 #[test]
 fn skips_bad_file() -> TestResult {
     let bad = gen_bad_file();
-    let expected = format!("{}: .* [(]os error 2[)]", bad);
+    let expected = format!("{}.*os error 2", bad);
     Command::cargo_bin(PRG)?
         .arg(bad)
         .assert()
@@ -101,7 +101,7 @@ fn fox_lines() -> TestResult {
 // --------------------------------------------------
 #[test]
 fn fox_words_bytes() -> TestResult {
-    run(&["-w", "-c", FOX], "tests/expected/fox.txt.wc.out")
+    run(&["-w", "-b", FOX], "tests/expected/fox.txt.wc.out")
 }
 
 // --------------------------------------------------
@@ -113,7 +113,7 @@ fn fox_words_lines() -> TestResult {
 // --------------------------------------------------
 #[test]
 fn fox_bytes_lines() -> TestResult {
-    run(&["-l", "-c", FOX], "tests/expected/fox.txt.cl.out")
+    run(&["-l", "-b", FOX], "tests/expected/fox.txt.cl.out")
 }
 
 // --------------------------------------------------
@@ -125,7 +125,7 @@ fn atlamal() -> TestResult {
 // --------------------------------------------------
 #[test]
 fn atlamal_bytes() -> TestResult {
-    run(&["-c", ATLAMAL], "tests/expected/atlamal.txt.c.out")
+    run(&["-b", ATLAMAL], "tests/expected/atlamal.txt.c.out")
 }
 
 // --------------------------------------------------
@@ -143,7 +143,7 @@ fn atlamal_lines() -> TestResult {
 // --------------------------------------------------
 #[test]
 fn atlamal_words_bytes() -> TestResult {
-    run(&["-w", "-c", ATLAMAL], "tests/expected/atlamal.txt.wc.out")
+    run(&["-w", "-b", ATLAMAL], "tests/expected/atlamal.txt.wc.out")
 }
 
 // --------------------------------------------------
@@ -155,7 +155,7 @@ fn atlamal_words_lines() -> TestResult {
 // --------------------------------------------------
 #[test]
 fn atlamal_bytes_lines() -> TestResult {
-    run(&["-l", "-c", ATLAMAL], "tests/expected/atlamal.txt.cl.out")
+    run(&["-l", "-b", ATLAMAL], "tests/expected/atlamal.txt.cl.out")
 }
 
 // --------------------------------------------------
@@ -192,7 +192,7 @@ fn test_all_words() -> TestResult {
 // --------------------------------------------------
 #[test]
 fn test_all_bytes() -> TestResult {
-    run(&["-c", EMPTY, FOX, ATLAMAL], "tests/expected/all.c.out")
+    run(&["-b", EMPTY, FOX, ATLAMAL], "tests/expected/all.c.out")
 }
 
 // --------------------------------------------------
