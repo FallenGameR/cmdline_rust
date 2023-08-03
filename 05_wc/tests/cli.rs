@@ -185,7 +185,7 @@ fn test_all_bytes() -> TestResult {
 // --------------------------------------------------
 #[test]
 fn test_all_words_bytes() -> TestResult {
-    run(&["-cw", EMPTY, FOX, ATLAMAL], "tests/expected/all.wc.out")
+    run(&["-bw", EMPTY, FOX, ATLAMAL], "tests/expected/all.wc.out")
 }
 
 // --------------------------------------------------
@@ -197,5 +197,5 @@ fn test_all_words_lines() -> TestResult {
 // --------------------------------------------------
 #[test]
 fn test_all_bytes_lines() -> TestResult {
-    run(&["-cl", EMPTY, FOX, ATLAMAL], "tests/expected/all.cl.out")
+    run(&["-bl", EMPTY, FOX, ATLAMAL], "tests/expected/all.cl.out")
 }
