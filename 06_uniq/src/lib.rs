@@ -1,7 +1,7 @@
 use clap::{arg, Command};
 use std::{
     error::Error,
-    io::{BufRead, BufReader},
+    io::{BufRead, BufReader, BufWriter, Write},
 };
 
 type DynErrorResult<T> = Result<T, Box<dyn Error>>;
@@ -37,12 +37,9 @@ pub fn get_args() -> DynErrorResult<Config> {
 pub fn run(config: Config) -> DynErrorResult<()> {
     println!("{:?}", config);
 
-    match open(&config.in_file) {
+    match open_read(&config) {
         Err(error) => eprintln!("Can't open file '{}', error {}", &config.in_file, error),
-        Ok(reader) =>
-        {
-            process_unuque(reader, &config)?;
-        },
+        Ok(reader) => process_unuque(reader, &config)?,
     }
 
     //File::create
@@ -90,9 +87,18 @@ fn process_unuque(mut reader: impl BufRead, config: &Config) -> DynErrorResult<(
     Ok(())
 }
 
-fn open(path: &str) -> DynErrorResult<Box<dyn BufRead>> {
-    match path {
+fn open_read(config: &Config) -> DynErrorResult<Box<dyn BufRead>> {
+    match config.in_file.as_str() {
         "-" => Ok(Box::new(BufReader::new(std::io::stdin()))),
-        _ => Ok(Box::new(BufReader::new(std::fs::File::open(path)?))),
+        path => Ok(Box::new(BufReader::new(std::fs::File::open(path)?))),
+    }
+}
+
+fn open_write(config: &Config) -> DynErrorResult<Box<dyn Write>> {
+    match config.out_file {
+        "-" => Ok(Box::new(BufWriter::new(std::io::stdout()))),
+        _ => Ok(Box::new(BufWriter::new(std::fs::File::create(path)?))),
+        Some("path") => todo!(),
+        None => todo!(),
     }
 }
