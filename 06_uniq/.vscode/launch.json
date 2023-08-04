@@ -1,0 +1,86 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'uniq'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=uniq"
+                ],
+                "filter": {
+                    "name": "uniq",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'uniq'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=uniq",
+                    "--package=uniq"
+                ],
+                "filter": {
+                    "name": "uniq",
+                    "kind": "bin"
+                }
+            },
+            "args": [
+                ".\\tests\\inputs\\three.txt",
+                "-c"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'uniq'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=uniq",
+                    "--package=uniq"
+                ],
+                "filter": {
+                    "name": "uniq",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug integration test 'cli'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--test=cli",
+                    "--package=uniq"
+                ],
+                "filter": {
+                    "name": "cli",
+                    "kind": "test"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

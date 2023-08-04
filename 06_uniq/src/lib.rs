@@ -39,26 +39,53 @@ pub fn run(config: Config) -> DynErrorResult<()> {
 
     match open(&config.in_file) {
         Err(error) => eprintln!("Can't open file '{}', error {}", &config.in_file, error),
-        Ok(_) =>
+        Ok(reader) =>
         {
-            println!("Opened file '{}'", &config.in_file);
+            process_unuque(reader, &config)?;
         },
     }
+
+    //File::create
 
     Ok(())
 }
 
-fn process_stats(mut reader: impl BufRead) -> DynErrorResult<()> {
-    let mut line = String::new();
+fn process_unuque(mut reader: impl BufRead, config: &Config) -> DynErrorResult<()> {
+    let mut tracked = String::new();
+    let mut current = String::new();
+    let mut count = 0;
+
+    fn output_line(line: &str, count: usize, config: &Config) {
+        let count_str = if config.count {count.to_string() + " "} else {"".to_owned()};
+        if count > 0 {
+            print!("{}{}", count_str, line);
+        }
+    }
 
     loop {
-        let bytes = reader.read_line(&mut line)?;
+        // Read line together with line endings
+        current.clear();
+        let bytes = reader.read_line(&mut current)?;
         if bytes == 0 {
             break;
         }
 
-        line.clear();
+        if tracked == current {
+            // Encountered a duplicate line
+            count += 1;
+        }
+        else {
+            // Output previosly tracked line
+            output_line(&tracked, count, config);
+
+            // Start tracking the new line
+            tracked = current.clone();
+            count = 1;
+        }
     }
+
+    // The last line was not dumped in the loop
+    output_line(&tracked, count, config);
 
     Ok(())
 }
