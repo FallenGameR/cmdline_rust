@@ -12,7 +12,7 @@ struct Test {
     out_count: &'static str,
 }
 
-const PRG: &str = "uniqr";
+const PRG: &str = "uniq";
 
 const EMPTY: Test = Test {
     input: "tests/inputs/empty.txt",
@@ -99,7 +99,7 @@ fn gen_bad_file() -> String {
 #[test]
 fn dies_bad_file() -> TestResult {
     let bad = gen_bad_file();
-    let expected = format!("{}: .* [(]os error 2[)]", bad);
+    let expected = format!("{}.*os error 2", bad);
     Command::cargo_bin(PRG)?
         .arg(bad)
         .assert()
