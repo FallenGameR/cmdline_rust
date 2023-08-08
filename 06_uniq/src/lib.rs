@@ -93,6 +93,9 @@ fn open_read(config: &Config) -> DynErrorResult<Box<dyn BufRead>> {
     }
 }
 
+// To check what common traits two types do implement:
+// rustup doc "std::io::stdout"
+// rustup doc "std::fs::File"
 fn open_write(config: &Config) -> DynErrorResult<Box<dyn Write>> {
     match &config.out_file {
         Some(path) if path == "-" => Ok(Box::new(io::stdout())),
