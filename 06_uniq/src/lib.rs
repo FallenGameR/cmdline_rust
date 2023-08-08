@@ -35,27 +35,26 @@ pub fn get_args() -> DynErrorResult<Config> {
 // cargo run -- -n (ls .\tests\inputs\*.txt)
 // cargo run -- -n (walker .\tests\inputs\ -a)
 pub fn run(config: Config) -> DynErrorResult<()> {
-    println!("{:?}", config);
+
+    let mut writer = open_write(&config)?;
 
     match open_read(&config) {
         Err(error) => eprintln!("Can't open file '{}', error {}", &config.in_file, error),
-        Ok(reader) => process_unuque(reader, &config)?,
+        Ok(reader) => process_unuque(reader, &mut writer, &config)?,
     }
-
-    //File::create
 
     Ok(())
 }
 
-fn process_unuque(mut reader: impl BufRead, config: &Config) -> DynErrorResult<()> {
+fn process_unuque(mut reader: impl BufRead, writer: &mut dyn Write, config: &Config) -> DynErrorResult<()> {
     let mut tracked = String::new();
     let mut current = String::new();
     let mut count = 0;
 
-    fn output_line(line: &str, count: usize, config: &Config) {
+    fn output_line(line: &str, count: usize, writer: &mut dyn Write, config: &Config) {
         let count_str = if config.count {count.to_string() + " "} else {"".to_owned()};
         if count > 0 {
-            print!("{}{}", count_str, line);
+            write!(writer, "{}{}", count_str, line).expect("It should be possible to write to stdout or file");
         }
     }
 
@@ -73,7 +72,7 @@ fn process_unuque(mut reader: impl BufRead, config: &Config) -> DynErrorResult<(
         }
         else {
             // Output previosly tracked line
-            output_line(&tracked, count, config);
+            output_line(&tracked, count, writer, config);
 
             // Start tracking the new line
             tracked = current.clone();
@@ -82,7 +81,7 @@ fn process_unuque(mut reader: impl BufRead, config: &Config) -> DynErrorResult<(
     }
 
     // The last line was not dumped in the loop
-    output_line(&tracked, count, config);
+    output_line(&tracked, count, writer, config);
 
     Ok(())
 }
@@ -95,10 +94,9 @@ fn open_read(config: &Config) -> DynErrorResult<Box<dyn BufRead>> {
 }
 
 fn open_write(config: &Config) -> DynErrorResult<Box<dyn Write>> {
-    match config.out_file {
-        "-" => Ok(Box::new(BufWriter::new(std::io::stdout()))),
-        _ => Ok(Box::new(BufWriter::new(std::fs::File::create(path)?))),
-        Some("path") => todo!(),
-        None => todo!(),
+    match &config.out_file {
+        Some(path) if path == "-" => Ok(Box::new(BufWriter::new(std::io::stdout()))),
+        Some(path) => Ok(Box::new(BufWriter::new(std::fs::File::create(path)?))),
+        None => Ok(Box::new(BufWriter::new(std::io::stdout()))),
     }
 }
