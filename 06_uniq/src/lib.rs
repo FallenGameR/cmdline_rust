@@ -66,7 +66,7 @@ fn process_unuque(mut reader: impl BufRead, writer: &mut dyn Write, config: &Con
             break;
         }
 
-        if tracked == current {
+        if tracked.trim_end() == current.trim_end() {
             // Encountered a duplicate line
             count += 1;
         }
