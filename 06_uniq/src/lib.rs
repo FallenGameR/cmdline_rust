@@ -51,12 +51,12 @@ fn process_unuque(mut reader: impl BufRead, writer: &mut dyn Write, config: &Con
     let mut current = String::new();
     let mut count = 0;
 
-    fn output_line(line: &str, count: usize, writer: &mut dyn Write, config: &Config) {
+    let mut output_line = |line: &str, count: usize| {
         let count_str = if config.count {format!("{:>4} ", count)} else {"".to_owned()};
         if count > 0 {
             write!(writer, "{}{}", count_str, line).expect("It should be possible to write to stdout or file");
         }
-    }
+    };
 
     loop {
         // Read line together with line endings
@@ -72,7 +72,7 @@ fn process_unuque(mut reader: impl BufRead, writer: &mut dyn Write, config: &Con
         }
         else {
             // Output previosly tracked line
-            output_line(&tracked, count, writer, config);
+            output_line(&tracked, count);
 
             // Start tracking the new line
             tracked = current.clone();
@@ -81,7 +81,7 @@ fn process_unuque(mut reader: impl BufRead, writer: &mut dyn Write, config: &Con
     }
 
     // The last line was not dumped in the loop
-    output_line(&tracked, count, writer, config);
+    output_line(&tracked, count);
 
     Ok(())
 }
