@@ -1,7 +1,7 @@
 use clap::{arg, Command};
 use std::{
     error::Error,
-    io::{BufRead, BufReader, Write},
+    io::{BufRead, BufReader, Write, self}, fs::File,
 };
 
 type DynErrorResult<T> = Result<T, Box<dyn Error>>;
@@ -88,15 +88,15 @@ fn process_unuque(mut reader: impl BufRead, writer: &mut dyn Write, config: &Con
 
 fn open_read(config: &Config) -> DynErrorResult<Box<dyn BufRead>> {
     match config.in_file.as_str() {
-        "-" => Ok(Box::new(BufReader::new(std::io::stdin()))),
-        path => Ok(Box::new(BufReader::new(std::fs::File::open(path)?))),
+        "-" => Ok(Box::new(BufReader::new(io::stdin()))),
+        path => Ok(Box::new(BufReader::new(File::open(path)?))),
     }
 }
 
 fn open_write(config: &Config) -> DynErrorResult<Box<dyn Write>> {
     match &config.out_file {
-        Some(path) if path == "-" => Ok(Box::new(std::io::stdout())),
-        Some(path) => Ok(Box::new(std::fs::File::create(path)?)),
-        None => Ok(Box::new(std::io::stdout())),
+        Some(path) if path == "-" => Ok(Box::new(io::stdout())),
+        Some(path) => Ok(Box::new(File::create(path)?)),
+        None => Ok(Box::new(io::stdout())),
     }
 }
