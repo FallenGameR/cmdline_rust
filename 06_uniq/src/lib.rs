@@ -51,11 +51,13 @@ fn process_unuque(mut reader: impl BufRead, writer: &mut dyn Write, config: &Con
     let mut current = String::new();
     let mut count = 0;
 
-    let mut output_line = |line: &str, count: usize| {
+    let mut output_line = |line: &str, count: usize| -> DynErrorResult<()> {
         if count > 0 {
             let count_str = if config.count {format!("{:>4} ", count)} else {"".to_owned()};
-            write!(writer, "{}{}", count_str, line).expect("It should be possible to write to stdout or file");
+            write!(writer, "{}{}", count_str, line)?;
         }
+
+        Ok(())
     };
 
     loop {
@@ -72,7 +74,7 @@ fn process_unuque(mut reader: impl BufRead, writer: &mut dyn Write, config: &Con
         }
         else {
             // Output previosly tracked line
-            output_line(&tracked, count);
+            output_line(&tracked, count)?;
 
             // Start tracking the new line
             tracked = current.clone();
@@ -81,7 +83,7 @@ fn process_unuque(mut reader: impl BufRead, writer: &mut dyn Write, config: &Con
     }
 
     // The last line was not dumped in the loop
-    output_line(&tracked, count);
+    output_line(&tracked, count)?;
 
     Ok(())
 }
