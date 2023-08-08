@@ -52,9 +52,9 @@ fn process_unuque(mut reader: impl BufRead, writer: &mut dyn Write, config: &Con
     let mut count = 0;
 
     fn output_line(line: &str, count: usize, writer: &mut dyn Write, config: &Config) {
-        let count_str = if config.count {count.to_string() + " "} else {"".to_owned()};
+        let count_str = if config.count {format!("{:>4} ", count)} else {"".to_owned()};
         if count > 0 {
-            write!(writer, "{:>5}{}", count_str, line).expect("It should be possible to write to stdout or file");
+            write!(writer, "{}{}", count_str, line).expect("It should be possible to write to stdout or file");
         }
     }
 
