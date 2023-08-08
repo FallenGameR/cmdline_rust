@@ -39,7 +39,7 @@ pub fn run(config: Config) -> DynErrorResult<()> {
     let mut writer = open_write(&config)?;
 
     match open_read(&config) {
-        Err(error) => eprintln!("Can't open file '{}', error {}", &config.in_file, error),
+        Err(error) => panic!("Can't open file '{}', error {}", &config.in_file, error),
         Ok(reader) => process_unuque(reader, &mut writer, &config)?,
     }
 
@@ -54,7 +54,7 @@ fn process_unuque(mut reader: impl BufRead, writer: &mut dyn Write, config: &Con
     fn output_line(line: &str, count: usize, writer: &mut dyn Write, config: &Config) {
         let count_str = if config.count {count.to_string() + " "} else {"".to_owned()};
         if count > 0 {
-            write!(writer, "{}{}", count_str, line).expect("It should be possible to write to stdout or file");
+            write!(writer, "{:>5}{}", count_str, line).expect("It should be possible to write to stdout or file");
         }
     }
 

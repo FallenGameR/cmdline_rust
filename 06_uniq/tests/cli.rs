@@ -162,7 +162,7 @@ fn run_outfile(test: &Test) -> TestResult {
     let outfile = NamedTempFile::new()?;
     let outpath = &outfile.path().to_str().unwrap();
     Command::cargo_bin(PRG)?
-        .args(&[test.input, outpath])
+        .args(&[test.input, "-o", outpath])
         .assert()
         .success()
         .stdout("");
@@ -179,7 +179,7 @@ fn run_outfile_count(test: &Test) -> TestResult {
     let outpath = &outfile.path().to_str().unwrap();
 
     Command::cargo_bin(PRG)?
-        .args(&[test.input, outpath, "--count"])
+        .args(&[test.input, "-o", outpath, "--count"])
         .assert()
         .success()
         .stdout("");
@@ -198,7 +198,7 @@ fn run_stdin_outfile_count(test: &Test) -> TestResult {
     let outpath = &outfile.path().to_str().unwrap();
 
     Command::cargo_bin(PRG)?
-        .args(&["-", outpath, "-c"])
+        .args(&["-", "-o", outpath, "-c"])
         .write_stdin(input)
         .assert()
         .stdout("");
