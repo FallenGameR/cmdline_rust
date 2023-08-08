@@ -1,7 +1,7 @@
 use clap::{arg, Command};
 use std::{
     error::Error,
-    io::{BufRead, BufReader, BufWriter, Write},
+    io::{BufRead, BufReader, Write},
 };
 
 type DynErrorResult<T> = Result<T, Box<dyn Error>>;
@@ -95,8 +95,8 @@ fn open_read(config: &Config) -> DynErrorResult<Box<dyn BufRead>> {
 
 fn open_write(config: &Config) -> DynErrorResult<Box<dyn Write>> {
     match &config.out_file {
-        Some(path) if path == "-" => Ok(Box::new(BufWriter::new(std::io::stdout()))),
-        Some(path) => Ok(Box::new(BufWriter::new(std::fs::File::create(path)?))),
-        None => Ok(Box::new(BufWriter::new(std::io::stdout()))),
+        Some(path) if path == "-" => Ok(Box::new(std::io::stdout())),
+        Some(path) => Ok(Box::new(std::fs::File::create(path)?)),
+        None => Ok(Box::new(std::io::stdout())),
     }
 }
