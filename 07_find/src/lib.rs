@@ -16,7 +16,7 @@ pub fn get_args() -> DynErrorResult<Config> {
         .author("FallenGameR")
         .about("Finds files and folders in the file system")
         .args([
-            arg!(<PATH> ... "Paths that would be used to start the search from"),
+            arg!([PATH] ... "Paths that would be used to start the search from").default_value("."),
             arg!(-n --name [NAME] ... "File names to look for"),
             arg!(-t --type [TYPE] ... "File types to look for")
                 .value_parser(PossibleValuesParser::new(&["f", "d", "l"]))
