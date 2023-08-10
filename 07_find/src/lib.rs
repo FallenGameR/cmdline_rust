@@ -25,8 +25,8 @@ pub fn get_args() -> DynErrorResult<Config> {
 
     Ok(Config {
         paths: matches.remove_many("PATH").expect("Paths were not provided").collect(),
-        names: matches.remove_many("name").expect("Names were not provided").collect(),
-        types: matches.remove_many("type").expect("Types were not provided").collect(),
+        names: matches.remove_many("name").unwrap_or_default().collect(),
+        types: matches.remove_many("type").unwrap_or_default().collect(),
     })
 }
 
