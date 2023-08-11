@@ -69,70 +69,7 @@ pub fn run(config: Config) -> DynErrorResult<()> {
                 Err(error) => eprint!("Error: {}", error),
             }
         }
-
     }
 
     Ok(())
 }
-
-/*
-fn process_unuque(mut reader: impl BufRead, writer: &mut dyn Write, config: &Config) -> DynErrorResult<()> {
-    let mut tracked = String::new();
-    let mut current = String::new();
-    let mut count = 0;
-
-    let mut output_line = |line: &str, count: usize| -> DynErrorResult<()> {
-        if count > 0 {
-            let count_str = if config.count {format!("{:>4} ", count)} else {"".to_owned()};
-            write!(writer, "{}{}", count_str, line)?;
-        }
-
-        Ok(())
-    };
-
-    loop {
-        // Read line together with line endings
-        current.clear();
-        let bytes = reader.read_line(&mut current)?;
-        if bytes == 0 {
-            break;
-        }
-
-        if tracked.trim_end() == current.trim_end() {
-            // Encountered a duplicate line
-            count += 1;
-        }
-        else {
-            // Output previosly tracked line
-            output_line(&tracked, count)?;
-
-            // Start tracking the new line
-            tracked = current.clone();
-            count = 1;
-        }
-    }
-
-    // The last line was not dumped in the loop
-    output_line(&tracked, count)?;
-
-    Ok(())
-}
-
-fn open_read(config: &Config) -> DynErrorResult<Box<dyn BufRead>> {
-    match config.in_file.as_str() {
-        "-" => Ok(Box::new(BufReader::new(io::stdin()))),
-        path => Ok(Box::new(BufReader::new(File::open(path)?))),
-    }
-}
-
-// To check what common traits two types do implement:
-// rustup doc "std::io::stdout"
-// rustup doc "std::fs::File"
-fn open_write(config: &Config) -> DynErrorResult<Box<dyn Write>> {
-    match &config.out_file {
-        Some(path) if path == "-" => Ok(Box::new(io::stdout())),
-        Some(path) => Ok(Box::new(File::create(path)?)),
-        None => Ok(Box::new(io::stdout())),
-    }
-}
-*/
