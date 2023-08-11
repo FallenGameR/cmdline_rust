@@ -1,13 +1,22 @@
 use clap::{arg, Command, builder::PossibleValuesParser};
+use crate::FileEntityType::*;
+use regex::Regex;
 use std::error::Error;
 
 type DynErrorResult<T> = Result<T, Box<dyn Error>>;
 
 #[derive(Debug)]
+enum FileEntityType {
+    File,
+    Dir,
+    Link,
+}
+
+#[derive(Debug)]
 pub struct Config {
     paths: Vec<String>,
-    names: Vec<String>,
-    types: Vec<String>,
+    names: Vec<Regex>,
+    types: Vec<FileEntityType>,
 }
 
 pub fn get_args() -> DynErrorResult<Config> {
@@ -25,8 +34,16 @@ pub fn get_args() -> DynErrorResult<Config> {
 
     Ok(Config {
         paths: matches.remove_many("PATH").expect("Paths were not provided").collect(),
-        names: matches.remove_many("name").unwrap_or_default().collect(),
-        types: matches.remove_many("type").unwrap_or_default().collect(),
+        names: matches.remove_many("name").unwrap_or_default().map(|regex_text|
+            Regex::new(regex_text)
+        ).collect::<Result<_,_>>()?,
+        types: matches.remove_many("type").unwrap_or_default().map(|entity_type|
+            match entity_type {
+                "f" => Ok(File),
+                "d" => Ok(Dir),
+                "l" => Ok(Link),
+                _ => Err("?")
+        }).collect::<Result<_, _>>()?,
     })
 }
 
