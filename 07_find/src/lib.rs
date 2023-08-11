@@ -1,6 +1,7 @@
 use crate::FileEntityType::*;
 use clap::{arg, builder::PossibleValuesParser, Command};
 use regex::Regex;
+use walkdir::WalkDir;
 use std::error::Error;
 
 type DynErrorResult<T> = Result<T, Box<dyn Error>>;
@@ -54,22 +55,22 @@ pub fn get_args() -> DynErrorResult<Config> {
                 "d" => Ok(Dir),
                 "l" => Ok(Link),
                 unknown => Err(format!("Unsupported file entiry type: {}", unknown)),
+                // unreachable! could be used instead here, then we don't need Ok() annotation
             })
             .collect::<Result<_, _>>()?,
     })
 }
 
-// cargo run -- -n (ls .\tests\inputs\*.txt)
-// cargo run -- -n (walker .\tests\inputs\ -a)
 pub fn run(config: Config) -> DynErrorResult<()> {
-    println!("{:?}", config);
+    for path in config.paths {
+        for entry in WalkDir::new(path) {
+            match entry {
+                Ok(entry) => println!("{}", entry.path().display()),
+                Err(error) => eprint!("Error: {}", error),
+            }
+        }
 
-    /*
-    match open_read(&config) {
-        Err(error) => panic!("Can't open file '{}', error {}", &config.in_file, error),
-        Ok(reader) => process_unuque(reader, &mut writer, &config)?,
     }
-    */
 
     Ok(())
 }
