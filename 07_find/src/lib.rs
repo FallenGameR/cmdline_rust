@@ -1,5 +1,5 @@
-use clap::{arg, Command, builder::PossibleValuesParser};
 use crate::FileEntityType::*;
+use clap::{arg, builder::PossibleValuesParser, Command};
 use regex::Regex;
 use std::error::Error;
 
@@ -28,29 +28,40 @@ pub fn get_args() -> DynErrorResult<Config> {
             arg!([PATH] ... "Paths that would be used to start the search from").default_value("."),
             arg!(-n --name [NAME] ... "File names to look for"),
             arg!(-t --type [TYPE] ... "File types to look for")
-                .value_parser(PossibleValuesParser::new(&["f", "d", "l"]))
+                .value_parser(PossibleValuesParser::new(&["f", "d", "l"])),
         ])
         .get_matches();
 
+    let names: Vec<String> = matches.remove_many("name").unwrap_or_default().collect();
+    let types: Vec<String> = matches.remove_many("type").unwrap_or_default().collect();
+
     Ok(Config {
-        paths: matches.remove_many("PATH").expect("Paths were not provided").collect(),
-        names: matches.remove_many("name").unwrap_or_default().map(|regex_text|
-            Regex::new(regex_text)
-        ).collect::<Result<_,_>>()?,
-        types: matches.remove_many("type").unwrap_or_default().map(|entity_type|
-            match entity_type {
+        paths: matches
+            .remove_many("PATH")
+            .expect("Paths were not provided")
+            .collect(),
+        names: names
+            .into_iter()
+            .map(|regex_text| {
+                Regex::new(&regex_text)
+                    .map_err(|err| format!("Invalid --name '{}', {}", regex_text, err))
+            })
+            .collect::<Result<_, _>>()?,
+        types: types
+            .into_iter()
+            .map(|entity_type| match entity_type.as_str() {
                 "f" => Ok(File),
                 "d" => Ok(Dir),
                 "l" => Ok(Link),
-                _ => Err("?")
-        }).collect::<Result<_, _>>()?,
+                unknown => Err(format!("Unsupported file entiry type: {}", unknown)),
+            })
+            .collect::<Result<_, _>>()?,
     })
 }
 
 // cargo run -- -n (ls .\tests\inputs\*.txt)
 // cargo run -- -n (walker .\tests\inputs\ -a)
 pub fn run(config: Config) -> DynErrorResult<()> {
-
     println!("{:?}", config);
 
     /*

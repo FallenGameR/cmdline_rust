@@ -1,11 +1,11 @@
 use assert_cmd::Command;
 use predicates::prelude::*;
 use rand::{distributions::Alphanumeric, Rng};
-use std::{borrow::Cow, fs, path::Path};
+use std::{borrow::Cow, fs};
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
-const PRG: &str = "findr";
+const PRG: &str = "find";
 
 // --------------------------------------------------
 fn gen_bad_file() -> String {
@@ -42,14 +42,14 @@ fn dies_bad_name() -> TestResult {
         .args(&["--name", "*.csv"])
         .assert()
         .failure()
-        .stderr(predicate::str::contains("Invalid --name \"*.csv\""));
+        .stderr(predicate::str::contains("Invalid --name '*.csv'"));
     Ok(())
 }
 
 // --------------------------------------------------
 #[test]
 fn dies_bad_type() -> TestResult {
-    let expected = "error: 'x' isn't a valid value for '--type <TYPE>...'";
+    let expected = "invalid value 'x' for '--type [<TYPE>]'";
     Command::cargo_bin(PRG)?
         .args(&["--type", "x"])
         .assert()
