@@ -221,6 +221,7 @@ fn type_l() -> TestResult {
 
 // --------------------------------------------------
 #[test]
+#[cfg(not(windows))]
 fn type_f_l() -> TestResult {
     run(
         &["tests/inputs", "-t", "l", "f"],
