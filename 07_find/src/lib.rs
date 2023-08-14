@@ -92,6 +92,10 @@ fn process(entry: walkdir::DirEntry, config: &Config) {
             Link => entry.file_type().is_symlink(),
         });
 
+    // Another way of doing it would be to pass filter closure
+    // into walkdir. The closure would reference config and do
+    // essentially the same thing we do here, but would call
+    // the type filter less often.
     if name_match && type_match {
         println!("{}", path.display());
     }
