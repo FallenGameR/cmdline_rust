@@ -1,8 +1,8 @@
-use crate::FileEntityType::*;
 use clap::{arg, builder::PossibleValuesParser, Command};
+use crate::FileEntityType::*;
 use regex::Regex;
-use walkdir::WalkDir;
 use std::error::Error;
+use walkdir::WalkDir;
 
 type DynErrorResult<T> = Result<T, Box<dyn Error>>;
 
@@ -62,14 +62,33 @@ pub fn get_args() -> DynErrorResult<Config> {
 }
 
 pub fn run(config: Config) -> DynErrorResult<()> {
-    for path in config.paths {
+    for path in &config.paths {
         for entry in WalkDir::new(path) {
             match entry {
-                Ok(entry) => println!("{}", entry.path().display()),
+                Ok(entry) => process(entry, &config),
                 Err(error) => eprint!("Error: {}", error),
             }
         }
     }
 
     Ok(())
+}
+
+fn process(entry: walkdir::DirEntry, config: &Config) {
+    let path = entry.path();
+    let file_name = path.file_name().unwrap().to_str().unwrap();
+    let name_match =
+        config.names.is_empty() ||
+        config.names.iter().any(|regex| regex.is_match(file_name));
+    let type_match =
+        config.types.is_empty() ||
+        config.types.iter().any(|entity_type| match entity_type {
+            File => entry.file_type().is_file(),
+            Dir => entry.file_type().is_dir(),
+            Link => entry.file_type().is_symlink(),
+        });
+
+    if name_match && type_match {
+        println!("{}", path.display());
+    }
 }
