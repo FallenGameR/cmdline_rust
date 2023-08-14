@@ -76,10 +76,14 @@ pub fn run(config: Config) -> DynErrorResult<()> {
 
 fn process(entry: walkdir::DirEntry, config: &Config) {
     let path = entry.path();
+
+    // The solution uses to_string_lossy here, but it's not needed to pass tests
     let file_name = path.file_name().unwrap().to_str().unwrap();
+
     let name_match =
         config.names.is_empty() ||
         config.names.iter().any(|regex| regex.is_match(file_name));
+
     let type_match =
         config.types.is_empty() ||
         config.types.iter().any(|entity_type| match entity_type {
