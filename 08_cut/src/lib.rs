@@ -30,13 +30,21 @@ pub fn get_args() -> DynErrorResult<Config> {
         .args([
             arg!([FILES] ... "Files to process, stdin is -")
                 .default_value("-"),
-            arg!(-d --delimeter "Delimeter to use, tab is default")
-                .default_value("10")
+            arg!(-d --delimeter "Fields delimeter, tab is default")
+                .default_value("\t")
+                .value_parser(clap::value_parser!(u8)),
+            arg!(-b --bytes <BYTES> ... "What byte ranges to extract, e.g. 1, 3-5, 2")
                 .value_parser(clap::value_parser!(usize))
-                .conflicts_with("bytes"),
-            arg!(-b --bytes <BYTES> "What byte ranges to extract, e.g. 1, 3-5, 2")
+                .conflicts_with("chars")
+                .conflicts_with("fields"),
+            arg!(-c --chars <CHARS> ... "What char ranges to extract, e.g. 1, 3-5, 2")
                 .value_parser(clap::value_parser!(usize))
-                .conflicts_with("lines"),
+                .conflicts_with("bytes")
+                .conflicts_with("fields"),
+            arg!(-f --fields <FIELDS> ... "What field ranges to extract, e.g. 1, 3-5, 2")
+                .value_parser(clap::value_parser!(usize))
+                .conflicts_with("bytes")
+                .conflicts_with("chars"),
         ])
         .get_matches();
 
