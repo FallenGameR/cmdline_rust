@@ -48,6 +48,14 @@ pub fn get_args() -> DynErrorResult<Config> {
         ])
         .get_matches();
 
+    let range_type_count =
+        matches.contains_id("bytes") as u8 +
+        matches.contains_id("chars") as u8 +
+        matches.contains_id("fields") as u8;
+    if range_type_count != 1 {
+        return Err("Please provide either --bytes --chars or --fields once".into());
+    }
+
     Ok(Config {
         files: matches
             .remove_many("FILES")
