@@ -18,8 +18,8 @@ pub enum ExtractedRanges
 #[derive(Debug)]
 pub struct Config {
     files: Vec<String>,
-    delimeter: u8,              // can be only an ASCII char
     extracted: ExtractedRanges,
+    delimeter: u8,              // can be only an ASCII char
 }
 
 pub fn get_args() -> DynErrorResult<Config> {
@@ -30,9 +30,6 @@ pub fn get_args() -> DynErrorResult<Config> {
         .args([
             arg!([FILES] ... "Files to process, stdin is -")
                 .default_value("-"),
-            arg!(-d --delimeter "Fields delimeter, tab is default")
-                .default_value("\t")
-                .value_parser(clap::value_parser!(u8)),
             arg!(-b --bytes <BYTES> ... "What byte ranges to extract, e.g. 1, 3-5, 2")
                 .value_parser(clap::value_parser!(usize))
                 .conflicts_with("chars")
@@ -45,6 +42,9 @@ pub fn get_args() -> DynErrorResult<Config> {
                 .value_parser(clap::value_parser!(usize))
                 .conflicts_with("bytes")
                 .conflicts_with("chars"),
+            arg!(-d --delimeter "Fields delimeter, tab is default")
+                .default_value("\t")
+                .value_parser(clap::value_parser!(u8)),
         ])
         .get_matches();
 
@@ -56,8 +56,9 @@ pub fn get_args() -> DynErrorResult<Config> {
         lines: matches
             .remove_many("lines")
             .expect("No number of lines provided"),
-        bytes: matches
-            .remove_one("bytes"),
+        delimeter: matches
+            .remove_one("delimeter")
+            .expect("No delimeter was provided"),
     })
 }
 
