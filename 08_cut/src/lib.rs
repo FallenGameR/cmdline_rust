@@ -1,5 +1,5 @@
 use std::{error::Error, io::{BufRead, BufReader}, ops::Range};
-use clap::{arg, Command};
+use clap::{arg, Command, builder::BoolishValueParser};
 
 const PAGE_SIZE: usize = 4096;
 const BUFFER_SIZE: usize = PAGE_SIZE * 2;
@@ -23,6 +23,7 @@ pub struct Config {
 }
 
 pub fn get_args() -> DynErrorResult<Config> {
+
     let mut matches = Command::new("cut")
         .version("1.0")
         .author("FallenGameR")
@@ -30,16 +31,16 @@ pub fn get_args() -> DynErrorResult<Config> {
         .args([
             arg!([FILES] ... "Files to process, stdin is -")
                 .default_value("-"),
-            arg!(-b --bytes <BYTES> ... "What byte ranges to extract, e.g. 1, 3-5, 2")
-                .value_parser(clap::value_parser!(usize))
+            arg!(-b --bytes <BYTES> ... "What byte ranges to extract, e.g. 1, 3-5")
+                .value_parser(parse_position)
                 .conflicts_with("chars")
                 .conflicts_with("fields"),
-            arg!(-c --chars <CHARS> ... "What char ranges to extract, e.g. 1, 3-5, 2")
-                .value_parser(clap::value_parser!(usize))
+            arg!(-c --chars <CHARS> ... "What char ranges to extract, e.g. 3-5, 2")
+                .value_parser(parse_position)
                 .conflicts_with("bytes")
                 .conflicts_with("fields"),
             arg!(-f --fields <FIELDS> ... "What field ranges to extract, e.g. 1, 3-5, 2")
-                .value_parser(clap::value_parser!(usize))
+                .value_parser(parse_position)
                 .conflicts_with("bytes")
                 .conflicts_with("chars"),
             arg!(-d --delimeter "Fields delimeter, tab is default")
@@ -56,21 +57,33 @@ pub fn get_args() -> DynErrorResult<Config> {
         return Err("Please provide either --bytes --chars or --fields once".into());
     }
 
+    let mut test: Vec<Range<usize>> = matches.remove_many("bytes").unwrap().collect();
+
+    if matches.contains_id("bytes") {
+        let extract = ExtractedRanges::Bytes(test);
+    }
+
+    if matches.contains_id("chars") {
+        test = ExtractedRanges::Chars(parse_positions(matches.remove_many("chars").unwrap())?);
+    }
+
+    if matches.contains_id("fields") {
+        test = ExtractedRanges::Fields(parse_positions(matches.remove_many("fields").unwrap())?);
+    }
+
     Ok(Config {
         files: matches
             .remove_many("FILES")
             .expect("No file paths provided")
             .collect(),
-        lines: matches
-            .remove_many("lines")
-            .expect("No number of lines provided"),
+        extracted: extract,
         delimeter: matches
             .remove_one("delimeter")
             .expect("No delimeter was provided"),
     })
 }
 
-fn parse_positions(range: &str) -> DynErrorResult<Positions> {
+fn parse_position(range: &str) -> Result<Range<usize>, clap::Error> {
     unimplemented!()
 }
 
