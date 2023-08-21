@@ -1,5 +1,14 @@
-use std::{error::Error, io::{BufRead, BufReader}, ops::Range};
-use clap::{arg, Command, builder::BoolishValueParser};
+use clap::{
+    arg,
+    builder::BoolishValueParser,
+    error::{ContextKind, ContextValue, ErrorKind},
+    Command,
+};
+use std::{
+    error::Error,
+    io::{BufRead, BufReader},
+    ops::Range,
+};
 
 const PAGE_SIZE: usize = 4096;
 const BUFFER_SIZE: usize = PAGE_SIZE * 2;
@@ -8,8 +17,7 @@ type DynErrorResult<T> = Result<T, Box<dyn Error>>;
 type Positions = Vec<Range<usize>>;
 
 #[derive(Debug)]
-pub enum ExtractedRanges
-{
+pub enum ExtractedRanges {
     Bytes(Positions),
     Chars(Positions),
     Fields(Positions),
@@ -19,18 +27,16 @@ pub enum ExtractedRanges
 pub struct Config {
     files: Vec<String>,
     extracted: ExtractedRanges,
-    delimeter: u8,              // can be only an ASCII char
+    delimeter: u8, // can be only an ASCII char
 }
 
 pub fn get_args() -> DynErrorResult<Config> {
-
     let mut matches = Command::new("cut")
         .version("1.0")
         .author("FallenGameR")
         .about("Extracts data from a text file")
         .args([
-            arg!([FILES] ... "Files to process, stdin is -")
-                .default_value("-"),
+            arg!([FILES] ... "Files to process, stdin is -").default_value("-"),
             arg!(-b --bytes <BYTES> ... "What byte ranges to extract, e.g. 1, 3-5")
                 .value_parser(parse_position)
                 .conflicts_with("chars")
@@ -49,26 +55,11 @@ pub fn get_args() -> DynErrorResult<Config> {
         ])
         .get_matches();
 
-    let range_type_count =
-        matches.contains_id("bytes") as u8 +
-        matches.contains_id("chars") as u8 +
-        matches.contains_id("fields") as u8;
+    let range_type_count = matches.contains_id("bytes") as u8
+        + matches.contains_id("chars") as u8
+        + matches.contains_id("fields") as u8;
     if range_type_count != 1 {
         return Err("Please provide either --bytes --chars or --fields once".into());
-    }
-
-    let mut test: Vec<Range<usize>> = matches.remove_many("bytes").unwrap().collect();
-
-    if matches.contains_id("bytes") {
-        let extract = ExtractedRanges::Bytes(test);
-    }
-
-    if matches.contains_id("chars") {
-        test = ExtractedRanges::Chars(parse_positions(matches.remove_many("chars").unwrap())?);
-    }
-
-    if matches.contains_id("fields") {
-        test = ExtractedRanges::Fields(parse_positions(matches.remove_many("fields").unwrap())?);
     }
 
     Ok(Config {
@@ -76,7 +67,28 @@ pub fn get_args() -> DynErrorResult<Config> {
             .remove_many("FILES")
             .expect("No file paths provided")
             .collect(),
-        extracted: extract,
+        extracted: if matches.contains_id("bytes") {
+            ExtractedRanges::Bytes(
+                matches
+                    .remove_many("bytes")
+                    .expect("Byte ranges need to be defined")
+                    .collect(),
+            )
+        } else if matches.contains_id("chars") {
+            ExtractedRanges::Chars(
+                matches
+                    .remove_many("chars")
+                    .expect("Char ranges need to be defined")
+                    .collect(),
+            )
+        } else {
+            ExtractedRanges::Fields(
+                matches
+                    .remove_many("fields")
+                    .expect("Field ranges need to be defined")
+                    .collect(),
+            )
+        },
         delimeter: matches
             .remove_one("delimeter")
             .expect("No delimeter was provided"),
@@ -84,7 +96,17 @@ pub fn get_args() -> DynErrorResult<Config> {
 }
 
 fn parse_position(range: &str) -> Result<Range<usize>, clap::Error> {
-    unimplemented!()
+    let result = range
+        .split('-')
+        .map(|x| x.parse::<usize>())
+        .collect::<Result<Vec<usize>, _>>()
+        .map_err(|_| {
+            clap::Error::new(ErrorKind::InvalidValue).insert(
+                ContextKind::InvalidValue,
+                ContextValue::String(format!("Invalid range '{}'", range)),
+            )
+        });
+    result
 }
 
 pub fn run(config: Config) -> DynErrorResult<()> {
@@ -118,7 +140,7 @@ pub fn run(config: Config) -> DynErrorResult<()> {
 fn open(path: &str) -> DynErrorResult<Box<dyn BufRead>> {
     match path {
         "-" => Ok(Box::new(BufReader::new(std::io::stdin()))),
-        _ => Ok(Box::new(BufReader::new(std::fs::File::open(path)?)))
+        _ => Ok(Box::new(BufReader::new(std::fs::File::open(path)?))),
     }
 }
 
