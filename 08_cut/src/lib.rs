@@ -98,14 +98,11 @@ pub fn get_args() -> Result<Config> {
 }
 
 fn parse_ranges(range: &str) -> Result<Vec<Range<usize>>> {
-    let result: Result<Vec<Range<usize>>, _> =
-        range.split(',').map(|x| parse_range(x.trim())).collect();
-
-    result
+    range.split(',').map(|x| parse_range(x.trim())).collect()
 }
 
 fn parse_range(range: &str) -> Result<Range<usize>> {
-    let result: Result<Vec<usize>, _> = range.split('-').map(|x| x.parse()).collect();
+    let result = range.split('-').map(|x| x.parse()).collect::<Result<Vec<usize>, _>>();
 
     // Expects inclusive ranges and converts them to exclusive disallowing zero indexes
     let construct = |start, end| -> Result<Range<usize>> {
