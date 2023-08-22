@@ -7,6 +7,7 @@ use std::{
     io::{BufRead, BufReader},
     ops::Range,
 };
+use anyhow::{Result, bail};
 
 const PAGE_SIZE: usize = 4096;
 const BUFFER_SIZE: usize = PAGE_SIZE * 2;
@@ -101,7 +102,7 @@ pub fn get_args() -> DynErrorResult<Config> {
     })
 }
 
-fn parse_ranges(range: &str) -> anyhow::Result<Vec<Range<usize>>> {
+fn parse_ranges(range: &str) -> Result<Vec<Range<usize>>> {
     let result: Result<Vec<Range<usize>>, _> = range
         .split(',')
         .map(|x| parse_range(x.trim()))
@@ -110,15 +111,15 @@ fn parse_ranges(range: &str) -> anyhow::Result<Vec<Range<usize>>> {
     result
 }
 
-fn parse_range(range: &str) -> anyhow::Result<Range<usize>> {
+fn parse_range(range: &str) -> Result<Range<usize>> {
     let result: Result<Vec<usize>, _> = range
         .split('-')
         .map(|x| x.parse())
         .collect();
 
-    let construct = |start, end| -> anyhow::Result<Range<usize>> {
+    let construct = |start, end| -> Result<Range<usize>> {
         if start == 0 || end == 0 {
-            return Err(anyhow::anyhow!("Positions start at one, zero is invalid value"));
+            bail!("Positions start at one, zero is invalid value");
         }
 
         Ok(start..end)
@@ -134,7 +135,7 @@ fn parse_range(range: &str) -> anyhow::Result<Range<usize>> {
         }
     }
 
-    Err(anyhow::anyhow!("Invalid range '{}'", range))
+    bail!("Invalid range '{}'", range)
 }
 
 pub fn run(config: Config) -> DynErrorResult<()> {
