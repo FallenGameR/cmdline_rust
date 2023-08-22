@@ -107,21 +107,22 @@ fn parse_ranges(range: &str) -> Result<Vec<Range<usize>>> {
 fn parse_range(range: &str) -> Result<Range<usize>> {
     let result: Result<Vec<usize>, _> = range.split('-').map(|x| x.parse()).collect();
 
+    // Expects inclusive ranges and converts them to exclusive disallowing zero indexes
     let construct = |start, end| -> Result<Range<usize>> {
         if start == 0 || end == 0 {
             bail!("Positions start at one, zero is invalid value");
         }
 
-        Ok(start..end)
+        Ok(start..end + 1)
     };
 
     if let Ok(res) = result {
         if res.len() == 1 {
-            return construct(res[0], res[0] + 1);
+            return construct(res[0], res[0]);
         }
 
         if res.len() == 2 {
-            return construct(res[0], res[1] + 1);
+            return construct(res[0], res[1]);
         }
     }
 
@@ -211,11 +212,15 @@ mod unit_tests {
         // Zero is an error
         let res = parse_ranges("0");
         assert!(res.is_err());
-        assert_eq!(res.unwrap_err().to_string(), "illegal list value: \"0\"",);
+        assert_eq!(res.unwrap_err().to_string(), "Positions start at one, zero is invalid value",);
 
         let res = parse_ranges("0-1");
         assert!(res.is_err());
-        assert_eq!(res.unwrap_err().to_string(), "illegal list value: \"0\"",);
+        assert_eq!(res.unwrap_err().to_string(), "Positions start at one, zero is invalid value",);
+
+        let res = parse_ranges("10-0");
+        assert!(res.is_err());
+        assert_eq!(res.unwrap_err().to_string(), "Positions start at one, zero is invalid value",);
 
         // A leading "+" is an error
         let res = parse_ranges("+1");
