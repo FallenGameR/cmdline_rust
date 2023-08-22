@@ -37,16 +37,16 @@ pub fn get_args() -> DynErrorResult<Config> {
         .about("Extracts data from a text file")
         .args([
             arg!([FILES] ... "Files to process, stdin is -").default_value("-"),
-            arg!(-b --bytes <BYTES> ... "What byte ranges to extract, e.g. 1, 3-5")
-                .value_parser(parse_range)
+            arg!(-b --bytes <BYTES> "What byte ranges to extract, e.g. 1, 3-5")
+                .value_parser(parse_ranges)
                 .conflicts_with("chars")
                 .conflicts_with("fields"),
-            arg!(-c --chars <CHARS> ... "What char ranges to extract, e.g. 3-5, 2")
-                .value_parser(parse_range)
+            arg!(-c --chars <CHARS> "What char ranges to extract, e.g. 3-5, 2")
+                .value_parser(parse_ranges)
                 .conflicts_with("bytes")
                 .conflicts_with("fields"),
-            arg!(-f --fields <FIELDS> ... "What field ranges to extract, e.g. 1, 3-5, 2")
-                .value_parser(parse_range)
+            arg!(-f --fields <FIELDS> "What field ranges to extract, e.g. 1, 3-5, 2")
+                .value_parser(parse_ranges)
                 .conflicts_with("bytes")
                 .conflicts_with("chars"),
             arg!(-d --delimeter <DELIMETER> "Fields delimeter, tab is default")
@@ -86,9 +86,8 @@ pub fn get_args() -> DynErrorResult<Config> {
             .collect(),
         extracted: {
             let ranges = matches
-                .remove_many(selected)
-                .expect("No ranges were provided")
-                .collect();
+                .remove_one(selected)
+                .expect("No ranges were provided");
 
             match selected {
                 "bytes" => ExtractedRanges::Bytes(ranges),
@@ -101,6 +100,15 @@ pub fn get_args() -> DynErrorResult<Config> {
             .remove_one("delimeter")
             .expect("No delimeter was provided"),
     })
+}
+
+fn parse_ranges(range: &str) -> Result<Vec<Range<usize>>, clap::Error> {
+    let result: Result<Vec<Range<usize>>, _> = range
+        .split(',')
+        .map(|x| parse_range(x.trim()))
+        .collect();
+
+    result
 }
 
 fn parse_range(range: &str) -> Result<Range<usize>, clap::Error> {
