@@ -28,22 +28,6 @@ pub struct Config {
     delimeter: char,
 }
 
-// Define a custom error type
-#[derive(Debug)]
-struct CustomError {
-    message: String,
-}
-
-// Implement the Error trait for CustomError
-impl std::error::Error for CustomError {}
-
-// Implement the Display trait for CustomError to provide a user-friendly error message
-impl std::fmt::Display for CustomError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "Custom error: {}", self.message)
-    }
-}
-
 pub fn get_args() -> DynErrorResult<Config> {
     // CLI arguments
     let mut matches = Command::new("cut")
@@ -117,7 +101,7 @@ pub fn get_args() -> DynErrorResult<Config> {
     })
 }
 
-fn parse_ranges(range: &str) -> Result<Vec<Range<usize>>, CustomError> {
+fn parse_ranges(range: &str) -> anyhow::Result<Vec<Range<usize>>> {
     let result: Result<Vec<Range<usize>>, _> = range
         .split(',')
         .map(|x| parse_range(x.trim()))
@@ -126,15 +110,15 @@ fn parse_ranges(range: &str) -> Result<Vec<Range<usize>>, CustomError> {
     result
 }
 
-fn parse_range(range: &str) -> Result<Range<usize>, CustomError> {
+fn parse_range(range: &str) -> anyhow::Result<Range<usize>> {
     let result: Result<Vec<usize>, _> = range
         .split('-')
         .map(|x| x.parse())
         .collect();
 
-    let construct = |start, end| -> Result<Range<usize>, CustomError> {
+    let construct = |start, end| -> anyhow::Result<Range<usize>> {
         if start == 0 || end == 0 {
-            return Err(CustomError{ message: "Positions start at one, zero is invalid value".into() });
+            return Err(anyhow::anyhow!("Positions start at one, zero is invalid value"));
         }
 
         Ok(start..end)
@@ -150,7 +134,7 @@ fn parse_range(range: &str) -> Result<Range<usize>, CustomError> {
         }
     }
 
-    Err(CustomError{ message: format!("Invalid range '{}'", range) })
+    Err(anyhow::anyhow!("Invalid range '{}'", range))
 }
 
 pub fn run(config: Config) -> DynErrorResult<()> {
