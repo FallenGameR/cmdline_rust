@@ -117,13 +117,26 @@ fn parse_range(range: &str) -> Result<Range<usize>, clap::Error> {
         .map(|x| x.parse())
         .collect();
 
+    let construct = |start, end| -> Result<Range<usize>, clap::Error> {
+        if start == 0 || end == 0 {
+            let mut clap_error = clap::Error::new(ErrorKind::InvalidValue);
+            clap_error.insert(
+                ContextKind::InvalidValue,
+                ContextValue::String("Positions start at one, zero is invalid value".into()),
+            );
+            return Err(clap_error)
+        }
+
+        Ok(start..end)
+    };
+
     if let Ok(res) = result {
         if res.len() == 1 {
-            return Ok(res[0]..res[0] + 1);
+            return construct(res[0], res[0] + 1);
         }
 
         if res.len() == 2 {
-            return Ok(res[0]..res[1] + 1);
+            return construct(res[0], res[1] + 1);
         }
     }
 
