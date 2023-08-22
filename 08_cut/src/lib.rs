@@ -1,6 +1,5 @@
 use clap::{
     arg,
-    error::{ContextKind, ContextValue, ErrorKind},
     Command,
 };
 use std::{
@@ -27,6 +26,22 @@ pub struct Config {
     files: Vec<String>,
     extracted: ExtractedRanges,
     delimeter: char,
+}
+
+// Define a custom error type
+#[derive(Debug)]
+struct CustomError {
+    message: String,
+}
+
+// Implement the Error trait for CustomError
+impl std::error::Error for CustomError {}
+
+// Implement the Display trait for CustomError to provide a user-friendly error message
+impl std::fmt::Display for CustomError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "Custom error: {}", self.message)
+    }
 }
 
 pub fn get_args() -> DynErrorResult<Config> {
@@ -102,7 +117,7 @@ pub fn get_args() -> DynErrorResult<Config> {
     })
 }
 
-fn parse_ranges(range: &str) -> Result<Vec<Range<usize>>, clap::Error> {
+fn parse_ranges(range: &str) -> Result<Vec<Range<usize>>, CustomError> {
     let result: Result<Vec<Range<usize>>, _> = range
         .split(',')
         .map(|x| parse_range(x.trim()))
@@ -111,20 +126,16 @@ fn parse_ranges(range: &str) -> Result<Vec<Range<usize>>, clap::Error> {
     result
 }
 
-fn parse_range(range: &str) -> Result<Range<usize>, clap::Error> {
+
+fn parse_range(range: &str) -> Result<Range<usize>, CustomError> {
     let result: Result<Vec<usize>, _> = range
         .split('-')
         .map(|x| x.parse())
         .collect();
 
-    let construct = |start, end| -> Result<Range<usize>, clap::Error> {
+    let construct = |start, end| -> Result<Range<usize>, CustomError> {
         if start == 0 || end == 0 {
-            let mut clap_error = clap::Error::new(ErrorKind::InvalidValue);
-            clap_error.insert(
-                ContextKind::InvalidValue,
-                ContextValue::String("Positions start at one, zero is invalid value".into()),
-            );
-            return Err(clap_error)
+            return Err(CustomError{ message: "Positions start at one, zero is invalid value".into() });
         }
 
         Ok(start..end)
@@ -140,12 +151,7 @@ fn parse_range(range: &str) -> Result<Range<usize>, clap::Error> {
         }
     }
 
-    let mut clap_error = clap::Error::new(ErrorKind::InvalidValue);
-    clap_error.insert(
-        ContextKind::InvalidValue,
-        ContextValue::String(format!("Invalid range '{}'", range)),
-    );
-    Err(clap_error)
+    Err(CustomError{ message: format!("Invalid range '{}'", range) })
 }
 
 pub fn run(config: Config) -> DynErrorResult<()> {
