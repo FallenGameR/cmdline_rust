@@ -1,13 +1,12 @@
 use clap::{
     arg,
-    builder::BoolishValueParser,
     error::{ContextKind, ContextValue, ErrorKind},
     Command,
 };
 use std::{
     error::Error,
     io::{BufRead, BufReader},
-    ops::Range, hash::Hash, collections::LinkedList,
+    ops::Range,
 };
 
 const PAGE_SIZE: usize = 4096;
@@ -27,7 +26,7 @@ pub enum ExtractedRanges {
 pub struct Config {
     files: Vec<String>,
     extracted: ExtractedRanges,
-    delimeter: u8, // can be only an ASCII char
+    delimeter: char,
 }
 
 pub fn get_args() -> DynErrorResult<Config> {
@@ -50,9 +49,9 @@ pub fn get_args() -> DynErrorResult<Config> {
                 .value_parser(parse_range)
                 .conflicts_with("bytes")
                 .conflicts_with("chars"),
-            arg!(-d --delimeter "Fields delimeter, tab is default")
-                .default_value("\t")
-                .value_parser(clap::value_parser!(u8)),
+            arg!(-d --delimeter <DELIMETER> "Fields delimeter, tab is default")
+                .value_parser(clap::value_parser!(char))
+                .default_value("\t"),
         ])
         .get_matches();
 
