@@ -1,18 +1,13 @@
-use clap::{
-    arg,
-    Command,
-};
+use anyhow::{bail, Result};
+use clap::{arg, Command};
 use std::{
-    error::Error,
     io::{BufRead, BufReader},
     ops::Range,
 };
-use anyhow::{Result, bail};
 
 const PAGE_SIZE: usize = 4096;
 const BUFFER_SIZE: usize = PAGE_SIZE * 2;
 
-type DynErrorResult<T> = Result<T, Box<dyn Error>>;
 type Positions = Vec<Range<usize>>;
 
 #[derive(Debug)]
@@ -29,7 +24,7 @@ pub struct Config {
     delimeter: char,
 }
 
-pub fn get_args() -> DynErrorResult<Config> {
+pub fn get_args() -> Result<Config> {
     // CLI arguments
     let mut matches = Command::new("cut")
         .version("1.0")
@@ -75,7 +70,7 @@ pub fn get_args() -> DynErrorResult<Config> {
     }
 
     if selected_count != 1 {
-        return Err("Please provide either --bytes --chars or --fields once".into());
+        bail!("Please provide either --bytes --chars or --fields once");
     }
 
     // Composing the config
@@ -103,19 +98,14 @@ pub fn get_args() -> DynErrorResult<Config> {
 }
 
 fn parse_ranges(range: &str) -> Result<Vec<Range<usize>>> {
-    let result: Result<Vec<Range<usize>>, _> = range
-        .split(',')
-        .map(|x| parse_range(x.trim()))
-        .collect();
+    let result: Result<Vec<Range<usize>>, _> =
+        range.split(',').map(|x| parse_range(x.trim())).collect();
 
     result
 }
 
 fn parse_range(range: &str) -> Result<Range<usize>> {
-    let result: Result<Vec<usize>, _> = range
-        .split('-')
-        .map(|x| x.parse())
-        .collect();
+    let result: Result<Vec<usize>, _> = range.split('-').map(|x| x.parse()).collect();
 
     let construct = |start, end| -> Result<Range<usize>> {
         if start == 0 || end == 0 {
@@ -138,7 +128,7 @@ fn parse_range(range: &str) -> Result<Range<usize>> {
     bail!("Invalid range '{}'", range)
 }
 
-pub fn run(config: Config) -> DynErrorResult<()> {
+pub fn run(config: Config) -> Result<()> {
     println!("{:?}", config);
     Ok(())
     /*
@@ -166,7 +156,7 @@ pub fn run(config: Config) -> DynErrorResult<()> {
     */
 }
 
-fn open(path: &str) -> DynErrorResult<Box<dyn BufRead>> {
+fn open(path: &str) -> Result<Box<dyn BufRead>> {
     match path {
         "-" => Ok(Box::new(BufReader::new(std::io::stdin()))),
         _ => Ok(Box::new(BufReader::new(std::fs::File::open(path)?))),
@@ -230,24 +220,15 @@ mod unit_tests {
         // A leading "+" is an error
         let res = parse_ranges("+1");
         assert!(res.is_err());
-        assert_eq!(
-            res.unwrap_err().to_string(),
-            "illegal list value: \"+1\"",
-        );
+        assert_eq!(res.unwrap_err().to_string(), "illegal list value: \"+1\"",);
 
         let res = parse_ranges("+1-2");
         assert!(res.is_err());
-        assert_eq!(
-            res.unwrap_err().to_string(),
-            "illegal list value: \"+1-2\"",
-        );
+        assert_eq!(res.unwrap_err().to_string(), "illegal list value: \"+1-2\"",);
 
         let res = parse_ranges("1-+2");
         assert!(res.is_err());
-        assert_eq!(
-            res.unwrap_err().to_string(),
-            "illegal list value: \"1-+2\"",
-        );
+        assert_eq!(res.unwrap_err().to_string(), "illegal list value: \"1-+2\"",);
 
         // Any non-number is an error
         let res = parse_ranges("a");
@@ -260,17 +241,11 @@ mod unit_tests {
 
         let res = parse_ranges("1-a");
         assert!(res.is_err());
-        assert_eq!(
-            res.unwrap_err().to_string(),
-            "illegal list value: \"1-a\"",
-        );
+        assert_eq!(res.unwrap_err().to_string(), "illegal list value: \"1-a\"",);
 
         let res = parse_ranges("a-1");
         assert!(res.is_err());
-        assert_eq!(
-            res.unwrap_err().to_string(),
-            "illegal list value: \"a-1\"",
-        );
+        assert_eq!(res.unwrap_err().to_string(), "illegal list value: \"a-1\"",);
 
         // Wonky ranges
         let res = parse_ranges("-");
