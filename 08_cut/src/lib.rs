@@ -58,6 +58,7 @@ pub fn get_args() -> DynErrorResult<Config> {
     let range_type_count = matches.contains_id("bytes") as u8
         + matches.contains_id("chars") as u8
         + matches.contains_id("fields") as u8;
+
     if range_type_count != 1 {
         return Err("Please provide either --bytes --chars or --fields once".into());
     }
@@ -98,15 +99,25 @@ pub fn get_args() -> DynErrorResult<Config> {
 fn parse_position(range: &str) -> Result<Range<usize>, clap::Error> {
     let result = range
         .split('-')
-        .map(|x| x.parse::<usize>())
-        .collect::<Result<Vec<usize>, _>>()
-        .map_err(|_| {
-            clap::Error::new(ErrorKind::InvalidValue).insert(
-                ContextKind::InvalidValue,
-                ContextValue::String(format!("Invalid range '{}'", range)),
-            )
-        });
-    result
+        .map(|x| x.parse())
+        .collect::<Result<Vec<_>, _>>();
+
+    if let Ok(res) = result {
+        if res.len() == 1 {
+            return Ok(res[0]..res[0] + 1);
+        }
+
+        if res.len() == 2 {
+            return Ok(res[0]..res[1] + 1);
+        }
+    }
+
+    let mut clap_error = clap::Error::new(ErrorKind::InvalidValue);
+    clap_error.insert(
+        ContextKind::InvalidValue,
+        ContextValue::String(format!("Invalid range '{}'", range)),
+    );
+    Err(clap_error)
 }
 
 pub fn run(config: Config) -> DynErrorResult<()> {
