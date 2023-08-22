@@ -126,7 +126,6 @@ fn parse_ranges(range: &str) -> Result<Vec<Range<usize>>, CustomError> {
     result
 }
 
-
 fn parse_range(range: &str) -> Result<Range<usize>, CustomError> {
     let result: Result<Vec<usize>, _> = range
         .split('-')
