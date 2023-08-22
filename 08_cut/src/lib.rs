@@ -7,7 +7,7 @@ use clap::{
 use std::{
     error::Error,
     io::{BufRead, BufReader},
-    ops::Range,
+    ops::Range, hash::Hash, collections::LinkedList,
 };
 
 const PAGE_SIZE: usize = 4096;
@@ -31,6 +31,7 @@ pub struct Config {
 }
 
 pub fn get_args() -> DynErrorResult<Config> {
+    // CLI arguments
     let mut matches = Command::new("cut")
         .version("1.0")
         .author("FallenGameR")
@@ -38,15 +39,15 @@ pub fn get_args() -> DynErrorResult<Config> {
         .args([
             arg!([FILES] ... "Files to process, stdin is -").default_value("-"),
             arg!(-b --bytes <BYTES> ... "What byte ranges to extract, e.g. 1, 3-5")
-                .value_parser(parse_position)
+                .value_parser(parse_range)
                 .conflicts_with("chars")
                 .conflicts_with("fields"),
             arg!(-c --chars <CHARS> ... "What char ranges to extract, e.g. 3-5, 2")
-                .value_parser(parse_position)
+                .value_parser(parse_range)
                 .conflicts_with("bytes")
                 .conflicts_with("fields"),
             arg!(-f --fields <FIELDS> ... "What field ranges to extract, e.g. 1, 3-5, 2")
-                .value_parser(parse_position)
+                .value_parser(parse_range)
                 .conflicts_with("bytes")
                 .conflicts_with("chars"),
             arg!(-d --delimeter "Fields delimeter, tab is default")
@@ -55,40 +56,47 @@ pub fn get_args() -> DynErrorResult<Config> {
         ])
         .get_matches();
 
-    let range_type_count = matches.contains_id("bytes") as u8
-        + matches.contains_id("chars") as u8
-        + matches.contains_id("fields") as u8;
+    // Make sure that only one range type is provided
+    let mut selected_count = 0;
+    let mut selected = "";
 
-    if range_type_count != 1 {
+    if matches.contains_id("bytes") {
+        selected_count += 1;
+        selected = "bytes";
+    }
+
+    if matches.contains_id("chars") {
+        selected_count += 1;
+        selected = "chars";
+    }
+
+    if matches.contains_id("fields") {
+        selected_count += 1;
+        selected = "fields";
+    }
+
+    if selected_count != 1 {
         return Err("Please provide either --bytes --chars or --fields once".into());
     }
 
+    // Composing the config
     Ok(Config {
         files: matches
             .remove_many("FILES")
             .expect("No file paths provided")
             .collect(),
-        extracted: if matches.contains_id("bytes") {
-            ExtractedRanges::Bytes(
-                matches
-                    .remove_many("bytes")
-                    .expect("Byte ranges need to be defined")
-                    .collect(),
-            )
-        } else if matches.contains_id("chars") {
-            ExtractedRanges::Chars(
-                matches
-                    .remove_many("chars")
-                    .expect("Char ranges need to be defined")
-                    .collect(),
-            )
-        } else {
-            ExtractedRanges::Fields(
-                matches
-                    .remove_many("fields")
-                    .expect("Field ranges need to be defined")
-                    .collect(),
-            )
+        extracted: {
+            let ranges = matches
+                .remove_many(selected)
+                .expect("No ranges were provided")
+                .collect();
+
+            match selected {
+                "bytes" => ExtractedRanges::Bytes(ranges),
+                "chars" => ExtractedRanges::Chars(ranges),
+                "fields" => ExtractedRanges::Fields(ranges),
+                _ => unreachable!("Unknown range type"),
+            }
         },
         delimeter: matches
             .remove_one("delimeter")
@@ -96,11 +104,11 @@ pub fn get_args() -> DynErrorResult<Config> {
     })
 }
 
-fn parse_position(range: &str) -> Result<Range<usize>, clap::Error> {
-    let result = range
+fn parse_range(range: &str) -> Result<Range<usize>, clap::Error> {
+    let result: Result<Vec<usize>, _> = range
         .split('-')
         .map(|x| x.parse())
-        .collect::<Result<Vec<_>, _>>();
+        .collect();
 
     if let Ok(res) = result {
         if res.len() == 1 {
@@ -155,9 +163,9 @@ fn open(path: &str) -> DynErrorResult<Box<dyn BufRead>> {
     }
 }
 
+/*
 fn process_file(path: &str, mut reader: Box<dyn BufRead>, config: &Config) {
     unimplemented!()
-    /*
     let buffer_size = config.bytes.unwrap_or(BUFFER_SIZE);
     let mut buffer = vec![0; buffer_size];
 
@@ -168,12 +176,10 @@ fn process_file(path: &str, mut reader: Box<dyn BufRead>, config: &Config) {
         Ok(len) => process_buffer(&buffer[0..len], config),
         Err(error) => eprintln!("Can't open file '{}', error {}", path, error),
     }
-    */
 }
 
 fn process_buffer(buffer: &[u8], config: &Config) {
     unimplemented!()
-    /*
     let text = String::from_utf8_lossy(buffer);
     let mut line_count = 0;
 
@@ -188,5 +194,5 @@ fn process_buffer(buffer: &[u8], config: &Config) {
             break;
         }
     }
-    */
 }
+*/
