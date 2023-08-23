@@ -12,7 +12,7 @@ pub struct Config {
 }
 
 /// # Errors
-/// Will return Error in case there was a problem while parsing the arguments.
+/// Error is returned when there is a problem while parsing the arguments.
 pub fn get_args() -> DynErrorResult<Config> {
     let mut matches = Command::new("cat")
         .version("1.0")
@@ -37,10 +37,9 @@ pub fn get_args() -> DynErrorResult<Config> {
     })
 }
 
-// cargo run -- -n (ls .\tests\inputs\*.txt)
-// cargo run -- -n (walker .\tests\inputs\)
-// cargo run -- -n (walker .\tests\inputs\ -a)
-pub fn run(config: Config) -> DynErrorResult<()> {
+/// # Errors
+/// Error is returned when program could not process files
+pub fn run(config: &Config) -> DynErrorResult<()> {
     for path in &config.files {
         match open(path) {
             Ok(reader) => process(reader, &config),
