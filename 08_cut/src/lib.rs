@@ -131,7 +131,7 @@ fn parse_range(range: &str) -> Result<RangeInclusive<usize>> {
 }
 
 pub fn run(config: Config) -> Result<()> {
-    println!("{:?}", config);
+    println!("{:#?}", config);
     Ok(())
     /*
     let mutifile_handling = config.files.len() > 1;

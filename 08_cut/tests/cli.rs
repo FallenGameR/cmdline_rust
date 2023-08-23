@@ -5,7 +5,7 @@ use std::fs;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
-const PRG: &str = "cutr";
+const PRG: &str = "cut";
 const CSV: &str = "tests/inputs/movies1.csv";
 const TSV: &str = "tests/inputs/movies1.tsv";
 const BOOKS: &str = "tests/inputs/books.tsv";
@@ -55,7 +55,7 @@ fn dies(args: &[&str], expected: &str) -> TestResult {
 // --------------------------------------------------
 #[test]
 fn dies_not_enough_args() -> TestResult {
-    dies(&[CSV], "Must have --fields, --bytes, or --chars")
+    dies(&[CSV], "Please provide either --bytes --chars or --fields once")
 }
 
 // --------------------------------------------------
@@ -64,7 +64,7 @@ fn dies_bad_digit_field() -> TestResult {
     let bad = random_string();
     dies(
         &[CSV, "-f", &bad],
-        &format!("illegal list value: \"{}\"", &bad),
+        &format!("Invalid range '{}'", &bad),
     )
 }
 
@@ -74,7 +74,7 @@ fn dies_bad_digit_bytes() -> TestResult {
     let bad = random_string();
     dies(
         &[CSV, "-b", &bad],
-        &format!("illegal list value: \"{}\"", &bad),
+        &format!("Invalid range '{}'", &bad),
     )
 }
 
@@ -84,7 +84,7 @@ fn dies_bad_digit_chars() -> TestResult {
     let bad = random_string();
     dies(
         &[CSV, "-c", &bad],
-        &format!("illegal list value: \"{}\"", &bad),
+        &format!("Invalid range '{}'", &bad),
     )
 }
 
@@ -93,7 +93,7 @@ fn dies_bad_digit_chars() -> TestResult {
 fn dies_empty_delimiter() -> TestResult {
     dies(
         &[CSV, "-f", "1", "-d", ""],
-        "--delim \"\" must be a single byte",
+        "cannot parse char from empty string",
     )
 }
 
@@ -102,7 +102,7 @@ fn dies_empty_delimiter() -> TestResult {
 fn dies_bad_delimiter() -> TestResult {
     dies(
         &[CSV, "-f", "1", "-d", ",,"],
-        "--delim \",,\" must be a single byte",
+        "too many characters in string",
     )
 }
 
