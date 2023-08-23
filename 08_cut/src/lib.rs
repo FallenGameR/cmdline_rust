@@ -103,10 +103,10 @@ fn parse_ranges(range: &str) -> Result<Vec<RangeInclusive<usize>>> {
 }
 
 fn parse_range(range: &str) -> Result<RangeInclusive<usize>> {
-    let result = range
+    let result: Result<Vec<NonZeroUsize>, _> = range
         .split('-')
-        .map(|x| x.parse::<NonZeroUsize>())
-        .collect::<Result<Vec<NonZeroUsize>, _>>();
+        .map(|x| x.parse())
+        .collect();
 
     // Input: inclusive range as indexes, positive indexes
     // Output: inclusive range as range, zero-based indexes
