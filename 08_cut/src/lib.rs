@@ -6,9 +6,6 @@ use std::{
     ops::RangeInclusive,
 };
 
-const PAGE_SIZE: usize = 4096;
-const BUFFER_SIZE: usize = PAGE_SIZE * 2;
-
 type Positions = Vec<RangeInclusive<usize>>;
 
 #[derive(Debug)]
@@ -127,8 +124,8 @@ fn parse_range(range: &str) -> Result<RangeInclusive<usize>> {
 
 pub fn run(config: Config) -> Result<()> {
     for path in &config.files {
-        match open(&path) {
-            Ok(reader) => process_file(&path, reader, &config),
+        match open(path) {
+            Ok(reader) => process_file(path, reader, &config),
             Err(error) => eprintln!("Can't open file '{}', error {}", &path, error),
         }
     }
@@ -179,7 +176,7 @@ fn extract_chars(line: &str, ranges: &Positions) -> String {
 
     for range in ranges {
         let mut extracted = String::new();
-        for index in range.clone().into_iter() {
+        for index in range.clone() {
             if let Some(char) = line.chars().nth(index) {
                 extracted.push(char);
             }
