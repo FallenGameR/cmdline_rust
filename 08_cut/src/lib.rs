@@ -2,7 +2,8 @@ use anyhow::{bail, Result};
 use clap::{arg, Command};
 use std::{
     io::{BufRead, BufReader},
-    ops::{Range, RangeInclusive}, num::NonZeroUsize,
+    num::NonZeroUsize,
+    ops::{Range, RangeInclusive},
 };
 
 const PAGE_SIZE: usize = 4096;
@@ -107,27 +108,24 @@ fn parse_range(range: &str) -> Result<RangeInclusive<usize>> {
         .map(|x| x.parse::<NonZeroUsize>())
         .collect::<Result<Vec<NonZeroUsize>, _>>();
 
+    // Input: inclusive range as indexes, positive indexes
+    // Output: inclusive range as range, zero-based indexes
+    let construct = |start, end| -> Result<RangeInclusive<usize>> {
+        Ok(usize::from(start) - 1..=usize::from(end) - 1)
+    };
+
     match result {
-        Ok(res) => {
-            // Input: inclusive range as indexes, positive indexes
-            // Output: inclusive range as range, zero-based indexes
-            let construct = |start, end| -> Result<RangeInclusive<usize>> {
-                Ok(usize::from(start) - 1..=usize::from(end)-1)
-            };
-
-            if res.len() == 1 {
-                return construct(res[0], res[0]);
-            }
-
-            if res.len() == 2 {
-                return construct(res[0], res[1]);
-            }
-        }
-
-        Err(error) => bail!("Invalid range '{}' - {}", range, error)
+        Err(error) => bail!("Invalid range '{}' - {}", range, error),
+        Ok(parts) => match parts.len() {
+            1 => construct(parts[0], parts[0]),
+            2 => construct(parts[0], parts[1]),
+            _ => bail!(
+                "Invalid range '{}' - wrong number of range parts {}",
+                range,
+                parts.len()
+            ),
+        },
     }
-
-    bail!("Invalid range '{}'", range)
 }
 
 pub fn run(config: Config) -> Result<()> {
@@ -235,38 +233,74 @@ mod unit_tests {
         // Any non-number is an error
         let res = parse_ranges("a");
         assert!(res.is_err());
-        assert_eq!(res.unwrap_err().to_string(), "Invalid range 'a' - invalid digit found in string",);
+        assert_eq!(
+            res.unwrap_err().to_string(),
+            "Invalid range 'a' - invalid digit found in string"
+        );
 
         let res = parse_ranges("1,a");
         assert!(res.is_err());
-        assert_eq!(res.unwrap_err().to_string(), "Invalid range 'a' - invalid digit found in string",);
+        assert_eq!(
+            res.unwrap_err().to_string(),
+            "Invalid range 'a' - invalid digit found in string"
+        );
 
         let res = parse_ranges("1-a");
         assert!(res.is_err());
-        assert_eq!(res.unwrap_err().to_string(), "Invalid range '1-a' - invalid digit found in string",);
+        assert_eq!(
+            res.unwrap_err().to_string(),
+            "Invalid range '1-a' - invalid digit found in string"
+        );
 
         let res = parse_ranges("a-1");
         assert!(res.is_err());
-        assert_eq!(res.unwrap_err().to_string(), "Invalid range 'a-1' - invalid digit found in string",);
+        assert_eq!(
+            res.unwrap_err().to_string(),
+            "Invalid range 'a-1' - invalid digit found in string"
+        );
 
         // Wonky ranges
         let res = parse_ranges("-");
         assert!(res.is_err());
+        assert_eq!(
+            res.unwrap_err().to_string(),
+            "Invalid range '-' - cannot parse integer from empty string"
+        );
 
         let res = parse_ranges(",");
         assert!(res.is_err());
+        assert_eq!(
+            res.unwrap_err().to_string(),
+            "Invalid range '' - cannot parse integer from empty string"
+        );
 
         let res = parse_ranges("1,");
         assert!(res.is_err());
+        assert_eq!(
+            res.unwrap_err().to_string(),
+            "Invalid range '' - cannot parse integer from empty string"
+        );
 
         let res = parse_ranges("1-");
         assert!(res.is_err());
+        assert_eq!(
+            res.unwrap_err().to_string(),
+            "Invalid range '1-' - cannot parse integer from empty string"
+        );
 
         let res = parse_ranges("1-1-1");
         assert!(res.is_err());
+        assert_eq!(
+            res.unwrap_err().to_string(),
+            "Invalid range '1-1-1' - wrong number of range parts 3"
+        );
 
         let res = parse_ranges("1-1-a");
         assert!(res.is_err());
+        assert_eq!(
+            res.unwrap_err().to_string(),
+            "Invalid range '1-1-a' - invalid digit found in string"
+        );
 
         // All the following are acceptable
         let res = parse_ranges("1");
