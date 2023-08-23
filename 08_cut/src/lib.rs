@@ -107,20 +107,24 @@ fn parse_range(range: &str) -> Result<RangeInclusive<usize>> {
         .map(|x| x.parse::<NonZeroUsize>())
         .collect::<Result<Vec<NonZeroUsize>, _>>();
 
-    // Input: inclusive range as indexes, positive indexes
-    // Output: inclusive range as range, zero-based indexes
-    let construct = |start, end| -> Result<RangeInclusive<usize>> {
-        Ok(usize::from(start) - 1..=usize::from(end)-1)
-    };
+    match result {
+        Ok(res) => {
+            // Input: inclusive range as indexes, positive indexes
+            // Output: inclusive range as range, zero-based indexes
+            let construct = |start, end| -> Result<RangeInclusive<usize>> {
+                Ok(usize::from(start) - 1..=usize::from(end)-1)
+            };
 
-    if let Ok(res) = result {
-        if res.len() == 1 {
-            return construct(res[0], res[0]);
+            if res.len() == 1 {
+                return construct(res[0], res[0]);
+            }
+
+            if res.len() == 2 {
+                return construct(res[0], res[1]);
+            }
         }
 
-        if res.len() == 2 {
-            return construct(res[0], res[1]);
-        }
+        Err(error) => bail!("Invalid range '{}' - {}", range, error)
     }
 
     bail!("Invalid range '{}'", range)
@@ -211,39 +215,39 @@ mod unit_tests {
         assert!(res.is_err());
         assert_eq!(
             res.unwrap_err().to_string(),
-            "Invalid range '0'",
+            "Invalid range '0' - number would be zero for non-zero type",
         );
 
         let res = parse_ranges("0-1");
         assert!(res.is_err());
         assert_eq!(
             res.unwrap_err().to_string(),
-            "Invalid range '0-1'",
+            "Invalid range '0-1' - number would be zero for non-zero type",
         );
 
         let res = parse_ranges("10-0");
         assert!(res.is_err());
         assert_eq!(
             res.unwrap_err().to_string(),
-            "Invalid range '10-0'",
+            "Invalid range '10-0' - number would be zero for non-zero type",
         );
 
         // Any non-number is an error
         let res = parse_ranges("a");
         assert!(res.is_err());
-        assert_eq!(res.unwrap_err().to_string(), "Invalid range 'a'",);
+        assert_eq!(res.unwrap_err().to_string(), "Invalid range 'a' - invalid digit found in string",);
 
         let res = parse_ranges("1,a");
         assert!(res.is_err());
-        assert_eq!(res.unwrap_err().to_string(), "Invalid range 'a'",);
+        assert_eq!(res.unwrap_err().to_string(), "Invalid range 'a' - invalid digit found in string",);
 
         let res = parse_ranges("1-a");
         assert!(res.is_err());
-        assert_eq!(res.unwrap_err().to_string(), "Invalid range '1-a'",);
+        assert_eq!(res.unwrap_err().to_string(), "Invalid range '1-a' - invalid digit found in string",);
 
         let res = parse_ranges("a-1");
         assert!(res.is_err());
-        assert_eq!(res.unwrap_err().to_string(), "Invalid range 'a-1'",);
+        assert_eq!(res.unwrap_err().to_string(), "Invalid range 'a-1' - invalid digit found in string",);
 
         // Wonky ranges
         let res = parse_ranges("-");
