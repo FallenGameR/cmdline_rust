@@ -35,16 +35,13 @@ pub fn get_args() -> Result<Config> {
             arg!([FILES] ... "Files to process, stdin is -").default_value("-"),
             arg!(-b --bytes <BYTES> "What byte ranges to extract, e.g. 1, 3-5")
                 .value_parser(parse_ranges)
-                .conflicts_with("chars")
-                .conflicts_with("fields"),
+                .conflicts_with_all(["chars", "fields"]),
             arg!(-c --chars <CHARS> "What char ranges to extract, e.g. 3-5, 2")
                 .value_parser(parse_ranges)
-                .conflicts_with("bytes")
-                .conflicts_with("fields"),
+                .conflicts_with_all(["bytes", "fields"]),
             arg!(-f --fields <FIELDS> "What field ranges to extract, e.g. 1, 3-5, 2")
                 .value_parser(parse_ranges)
-                .conflicts_with("bytes")
-                .conflicts_with("chars"),
+                .conflicts_with_all(["bytes", "chars"]),
             arg!(-d --delimeter <DELIMETER> "Fields delimeter, tab is default")
                 .value_parser(clap::value_parser!(char))
                 .default_value("\t"),
