@@ -1,6 +1,5 @@
 # Notes
 
 ```ps1
-cargo clippy --fix -- -W clippy::pedantic 
-cargo clippy -- -W clippy::pedantic 
+cargo clippy --fix -- --warn clippy::pedantic --allow clippy::missing-errors-doc --allow clippy::needless-pass-by-value
 ```
