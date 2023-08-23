@@ -53,8 +53,8 @@ fn process_unuque(mut reader: impl BufRead, writer: &mut dyn Write, config: &Con
 
     let mut output_line = |line: &str, count: usize| -> DynErrorResult<()> {
         if count > 0 {
-            let count_str = if config.count {format!("{:>4} ", count)} else {"".to_owned()};
-            write!(writer, "{}{}", count_str, line)?;
+            let count_str = if config.count {format!("{count:>4} ")} else {String::new()};
+            write!(writer, "{count_str}{line}")?;
         }
 
         Ok(())
