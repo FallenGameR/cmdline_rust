@@ -39,7 +39,7 @@ pub fn get_args() -> DynErrorResult<Config> {
 
 /// # Errors
 /// Error is returned when program could not process files
-pub fn run(config: &Config) -> DynErrorResult<()> {
+pub fn run(config: Config) -> DynErrorResult<()> {
     for path in &config.files {
         match open(path) {
             Ok(reader) => process(reader, &config),
