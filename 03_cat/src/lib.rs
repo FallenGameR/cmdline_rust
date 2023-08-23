@@ -65,15 +65,9 @@ fn process(mut reader: Box<dyn BufRead>, config: &Config) {
             break;
         }
 
-        let mut output = || {
+        if config.number_lines || (config.number_nonblank_lines && !buf.trim().is_empty()) {
             index += 1;
             print!("{index:>6}\t");
-        };
-
-        if config.number_lines {
-            output();
-        } else if config.number_nonblank_lines && !buf.trim().is_empty() {
-            output();
         }
 
         print!("{buf}");
