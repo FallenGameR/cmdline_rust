@@ -2,7 +2,7 @@ use anyhow::{bail, Result};
 use clap::{arg, Command};
 use std::{
     io::{BufRead, BufReader},
-    ops::{Range, RangeInclusive},
+    ops::{Range, RangeInclusive}, num::NonZeroUsize,
 };
 
 const PAGE_SIZE: usize = 4096;
@@ -104,17 +104,13 @@ fn parse_ranges(range: &str) -> Result<Vec<RangeInclusive<usize>>> {
 fn parse_range(range: &str) -> Result<RangeInclusive<usize>> {
     let result = range
         .split('-')
-        .map(|x| x.parse())
-        .collect::<Result<Vec<usize>, _>>();
+        .map(|x| x.parse::<NonZeroUsize>())
+        .collect::<Result<Vec<NonZeroUsize>, _>>();
 
-    // Input: inclusive ranges, positive indexes
-    // Output: inclusive ranges, zero-based indexes
+    // Input: inclusive range as indexes, positive indexes
+    // Output: inclusive range as range, zero-based indexes
     let construct = |start, end| -> Result<RangeInclusive<usize>> {
-        if start == 0 || end == 0 {
-            bail!("Positions start at one, zero is invalid value");
-        }
-
-        Ok(start - 1..=end-1)
+        Ok(usize::from(start) - 1..=usize::from(end)-1)
     };
 
     if let Ok(res) = result {
@@ -215,21 +211,21 @@ mod unit_tests {
         assert!(res.is_err());
         assert_eq!(
             res.unwrap_err().to_string(),
-            "Positions start at one, zero is invalid value",
+            "Invalid range '0'",
         );
 
         let res = parse_ranges("0-1");
         assert!(res.is_err());
         assert_eq!(
             res.unwrap_err().to_string(),
-            "Positions start at one, zero is invalid value",
+            "Invalid range '0-1'",
         );
 
         let res = parse_ranges("10-0");
         assert!(res.is_err());
         assert_eq!(
             res.unwrap_err().to_string(),
-            "Positions start at one, zero is invalid value",
+            "Invalid range '10-0'",
         );
 
         // Any non-number is an error
