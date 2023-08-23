@@ -11,6 +11,8 @@ pub struct Config {
     number_nonblank_lines: bool,
 }
 
+/// # Errors
+/// Will return Error in case there was a problem while parsing the arguments.
 pub fn get_args() -> DynErrorResult<Config> {
     let mut matches = Command::new("cat")
         .version("1.0")
@@ -40,9 +42,9 @@ pub fn get_args() -> DynErrorResult<Config> {
 // cargo run -- -n (walker .\tests\inputs\ -a)
 pub fn run(config: Config) -> DynErrorResult<()> {
     for path in &config.files {
-        match open(&path) {
+        match open(path) {
             Ok(reader) => process(reader, &config),
-            Err(error) => eprintln!("Can't open file {}, error {}", path, error),
+            Err(error) => eprintln!("Can't open file {path}, error {error}"),
         }
     }
     Ok(())
@@ -66,13 +68,13 @@ fn process(mut reader: Box<dyn BufRead>, config: &Config) {
 
         if config.number_lines {
             index += 1;
-            print!("{:>6}\t", index);
+            print!("{index:>6}\t");
         } else if config.number_nonblank_lines && !buf.trim().is_empty() {
             index += 1;
-            print!("{:>6}\t", index);
+            print!("{index:>6}\t");
         }
 
-        print!("{}", buf);
+        print!("{buf}");
         buf.clear();
     }
 }
