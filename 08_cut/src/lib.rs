@@ -2,13 +2,13 @@ use anyhow::{bail, Result};
 use clap::{arg, Command};
 use std::{
     io::{BufRead, BufReader},
-    ops::Range,
+    ops::{Range, RangeInclusive},
 };
 
 const PAGE_SIZE: usize = 4096;
 const BUFFER_SIZE: usize = PAGE_SIZE * 2;
 
-type Positions = Vec<Range<usize>>;
+type Positions = Vec<RangeInclusive<usize>>;
 
 #[derive(Debug)]
 pub enum ExtractedRanges {
@@ -97,20 +97,24 @@ pub fn get_args() -> Result<Config> {
     })
 }
 
-fn parse_ranges(range: &str) -> Result<Vec<Range<usize>>> {
+fn parse_ranges(range: &str) -> Result<Vec<RangeInclusive<usize>>> {
     range.split(',').map(|x| parse_range(x.trim())).collect()
 }
 
-fn parse_range(range: &str) -> Result<Range<usize>> {
-    let result = range.split('-').map(|x| x.parse()).collect::<Result<Vec<usize>, _>>();
+fn parse_range(range: &str) -> Result<RangeInclusive<usize>> {
+    let result = range
+        .split('-')
+        .map(|x| x.parse())
+        .collect::<Result<Vec<usize>, _>>();
 
-    // Expects inclusive ranges and converts them to exclusive disallowing zero indexes
-    let construct = |start, end| -> Result<Range<usize>> {
+    // Input: inclusive ranges, positive indexes
+    // Output: inclusive ranges, zero-based indexes
+    let construct = |start, end| -> Result<RangeInclusive<usize>> {
         if start == 0 || end == 0 {
             bail!("Positions start at one, zero is invalid value");
         }
 
-        Ok(start..end + 1)
+        Ok(start - 1..=end)
     };
 
     if let Ok(res) = result {
@@ -209,45 +213,41 @@ mod unit_tests {
         // Zero is an error
         let res = parse_ranges("0");
         assert!(res.is_err());
-        assert_eq!(res.unwrap_err().to_string(), "Positions start at one, zero is invalid value",);
+        assert_eq!(
+            res.unwrap_err().to_string(),
+            "Positions start at one, zero is invalid value",
+        );
 
         let res = parse_ranges("0-1");
         assert!(res.is_err());
-        assert_eq!(res.unwrap_err().to_string(), "Positions start at one, zero is invalid value",);
+        assert_eq!(
+            res.unwrap_err().to_string(),
+            "Positions start at one, zero is invalid value",
+        );
 
         let res = parse_ranges("10-0");
         assert!(res.is_err());
-        assert_eq!(res.unwrap_err().to_string(), "Positions start at one, zero is invalid value",);
-
-        // A leading "+" is an error
-        let res = parse_ranges("+1");
-        assert!(res.is_err());
-        assert_eq!(res.unwrap_err().to_string(), "illegal list value: \"+1\"",);
-
-        let res = parse_ranges("+1-2");
-        assert!(res.is_err());
-        assert_eq!(res.unwrap_err().to_string(), "illegal list value: \"+1-2\"",);
-
-        let res = parse_ranges("1-+2");
-        assert!(res.is_err());
-        assert_eq!(res.unwrap_err().to_string(), "illegal list value: \"1-+2\"",);
+        assert_eq!(
+            res.unwrap_err().to_string(),
+            "Positions start at one, zero is invalid value",
+        );
 
         // Any non-number is an error
         let res = parse_ranges("a");
         assert!(res.is_err());
-        assert_eq!(res.unwrap_err().to_string(), "illegal list value: \"a\"",);
+        assert_eq!(res.unwrap_err().to_string(), "Invalid range 'a'",);
 
         let res = parse_ranges("1,a");
         assert!(res.is_err());
-        assert_eq!(res.unwrap_err().to_string(), "illegal list value: \"a\"",);
+        assert_eq!(res.unwrap_err().to_string(), "Invalid range 'a'",);
 
         let res = parse_ranges("1-a");
         assert!(res.is_err());
-        assert_eq!(res.unwrap_err().to_string(), "illegal list value: \"1-a\"",);
+        assert_eq!(res.unwrap_err().to_string(), "Invalid range '1-a'",);
 
         let res = parse_ranges("a-1");
         assert!(res.is_err());
-        assert_eq!(res.unwrap_err().to_string(), "illegal list value: \"a-1\"",);
+        assert_eq!(res.unwrap_err().to_string(), "Invalid range 'a-1'",);
 
         // Wonky ranges
         let res = parse_ranges("-");
@@ -268,53 +268,59 @@ mod unit_tests {
         let res = parse_ranges("1-1-a");
         assert!(res.is_err());
 
-        // First number must be less than second
-        let res = parse_ranges("1-1");
-        assert!(res.is_err());
-        assert_eq!(
-            res.unwrap_err().to_string(),
-            "First number in range (1) must be lower than second number (1)"
-        );
-
-        let res = parse_ranges("2-1");
-        assert!(res.is_err());
-        assert_eq!(
-            res.unwrap_err().to_string(),
-            "First number in range (2) must be lower than second number (1)"
-        );
-
         // All the following are acceptable
         let res = parse_ranges("1");
         assert!(res.is_ok());
-        assert_eq!(res.unwrap(), vec![0..1]);
+        assert_eq!(res.unwrap(), vec![0..=0]);
 
         let res = parse_ranges("01");
         assert!(res.is_ok());
-        assert_eq!(res.unwrap(), vec![0..1]);
+        assert_eq!(res.unwrap(), vec![0..=0]);
 
         let res = parse_ranges("1,3");
         assert!(res.is_ok());
-        assert_eq!(res.unwrap(), vec![0..1, 2..3]);
+        assert_eq!(res.unwrap(), vec![0..=0, 2..=2]);
 
         let res = parse_ranges("001,0003");
         assert!(res.is_ok());
-        assert_eq!(res.unwrap(), vec![0..1, 2..3]);
+        assert_eq!(res.unwrap(), vec![0..=0, 2..=2]);
 
         let res = parse_ranges("1-3");
         assert!(res.is_ok());
-        assert_eq!(res.unwrap(), vec![0..3]);
+        assert_eq!(res.unwrap(), vec![0..=2]);
 
         let res = parse_ranges("0001-03");
         assert!(res.is_ok());
-        assert_eq!(res.unwrap(), vec![0..3]);
+        assert_eq!(res.unwrap(), vec![0..=2]);
 
         let res = parse_ranges("1,7,3-5");
         assert!(res.is_ok());
-        assert_eq!(res.unwrap(), vec![0..1, 6..7, 2..5]);
+        assert_eq!(res.unwrap(), vec![0..=0, 6..=6, 2..=4]);
 
         let res = parse_ranges("15,19-20");
         assert!(res.is_ok());
-        assert_eq!(res.unwrap(), vec![14..15, 18..20]);
+        assert_eq!(res.unwrap(), vec![14..=14, 18..=19]);
+
+        let res = parse_ranges("1-1");
+        assert!(res.is_ok());
+        assert_eq!(res.unwrap(), vec![0..=0]);
+
+        let res = parse_ranges("2-1");
+        assert!(res.is_ok());
+        assert_eq!(res.unwrap(), vec![1..=0]);
+
+        // A leading "+" is not an error
+        let res = parse_ranges("+1");
+        assert!(res.is_ok());
+        assert_eq!(res.unwrap(), vec![0..=0]);
+
+        let res = parse_ranges("+1-2");
+        assert!(res.is_ok());
+        assert_eq!(res.unwrap(), vec![0..=2]);
+
+        let res = parse_ranges("1-+2");
+        assert!(res.is_ok());
+        assert_eq!(res.unwrap(), vec![0..=1]);
     }
 
     /*
