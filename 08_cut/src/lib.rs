@@ -171,7 +171,7 @@ fn process_buffer(buffer: &[u8], config: &Config) {
 }
 */
 
-fn extract_chars(line: &str, ranges: &Positions) -> String {
+fn extract_chars(line: &str, ranges: &[RangeInclusive<usize>]) -> String {
     let mut result = Vec::new();
 
     for range in ranges {
@@ -184,7 +184,7 @@ fn extract_chars(line: &str, ranges: &Positions) -> String {
         result.push(extracted);
     }
 
-    result.join(",")
+    result.join("")
 }
 
 fn extract_bytes(line: &str, ranges: &Positions) -> String {
@@ -362,20 +362,20 @@ mod unit_tests {
         assert_eq!(res.unwrap(), vec![0..=1]);
     }
 
-    /*
     #[test]
     fn test_extract_chars() {
-        assert_eq!(extract_chars("", &[0..1]), "".to_string());
-        assert_eq!(extract_chars("ábc", &[0..1]), "á".to_string());
-        assert_eq!(extract_chars("ábc", &[0..1, 2..3]), "ác".to_string());
-        assert_eq!(extract_chars("ábc", &[0..3]), "ábc".to_string());
-        assert_eq!(extract_chars("ábc", &[2..3, 1..2]), "cb".to_string());
+        assert_eq!(extract_chars("", &[0..=0]), "".to_string());
+        assert_eq!(extract_chars("ábc", &[0..=0]), "á".to_string());
+        assert_eq!(extract_chars("ábc", &[0..=0, 2..=2]), "ác".to_string());
+        assert_eq!(extract_chars("ábc", &[0..=2]), "ábc".to_string());
+        assert_eq!(extract_chars("ábc", &[2..=2, 1..=1]), "cb".to_string());
         assert_eq!(
-            extract_chars("ábc", &[0..1, 1..2, 4..5]),
+            extract_chars("ábc", &[0..=0, 1..=1, 4..=4]),
             "áb".to_string()
         );
     }
 
+    /*
     #[test]
     fn test_extract_fields() {
         let rec = StringRecord::from(vec!["Captain", "Sham", "12345"]);
