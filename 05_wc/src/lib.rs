@@ -85,12 +85,12 @@ pub fn run(config: Config) -> DynErrorResult<()> {
     let mut files_processed = 0;
 
     for path in &config.files {
-        match open(&path) {
+        match open(path) {
             Err(error) => eprintln!("Can't open file '{}', error {}", &path, error),
             Ok(reader) =>
             {
                 let stats = process_stats(reader)?;
-                output_stats(&stats, &path, &config);
+                output_stats(&stats, path, &config);
                 files_processed += 1;
                 totals += stats;
             },
@@ -139,9 +139,9 @@ fn output_stats(stats: &Stats, name: &str, config: &Config)
 
 fn format_field(value: usize, show: bool) -> String {
     if show {
-        format!("{:>8}", value)
+        format!("{value:>8}")
     } else {
-        "".to_string()
+        String::new()
     }
 }
 
