@@ -126,23 +126,7 @@ fn parse_range(range: &str) -> Result<RangeInclusive<usize>> {
 }
 
 pub fn run(config: Config) -> Result<()> {
-    println!("{:#?}", config);
-    Ok(())
-    /*
-    let mutifile_handling = config.files.len() > 1;
-    let mut entry_separator_needed = false;
-
     for path in &config.files {
-        if entry_separator_needed {
-            println!();
-        }
-
-        entry_separator_needed = true;
-
-        if mutifile_handling {
-            println!("==> {} <==", path);
-        }
-
         match open(&path) {
             Ok(reader) => process_file(&path, reader, &config),
             Err(error) => eprintln!("Can't open file '{}', error {}", &path, error),
@@ -150,19 +134,11 @@ pub fn run(config: Config) -> Result<()> {
     }
 
     Ok(())
-    */
 }
 
-fn open(path: &str) -> Result<Box<dyn BufRead>> {
-    match path {
-        "-" => Ok(Box::new(BufReader::new(std::io::stdin()))),
-        _ => Ok(Box::new(BufReader::new(std::fs::File::open(path)?))),
-    }
-}
-
-/*
 fn process_file(path: &str, mut reader: Box<dyn BufRead>, config: &Config) {
     unimplemented!()
+    /*
     let buffer_size = config.bytes.unwrap_or(BUFFER_SIZE);
     let mut buffer = vec![0; buffer_size];
 
@@ -173,8 +149,10 @@ fn process_file(path: &str, mut reader: Box<dyn BufRead>, config: &Config) {
         Ok(len) => process_buffer(&buffer[0..len], config),
         Err(error) => eprintln!("Can't open file '{}', error {}", path, error),
     }
+    */
 }
 
+/*
 fn process_buffer(buffer: &[u8], config: &Config) {
     unimplemented!()
     let text = String::from_utf8_lossy(buffer);
@@ -193,6 +171,25 @@ fn process_buffer(buffer: &[u8], config: &Config) {
     }
 }
 */
+
+fn extract_chars(line: &str, ranges: &Positions) -> String {
+    unimplemented!()
+}
+
+fn extract_bytes(line: &str, ranges: &Positions) -> String {
+    unimplemented!()
+}
+
+fn extract_fields(line: &str, ranges: &Positions) -> String {
+    unimplemented!()
+}
+
+fn open(path: &str) -> Result<Box<dyn BufRead>> {
+    match path {
+        "-" => Ok(Box::new(BufReader::new(std::io::stdin()))),
+        _ => Ok(Box::new(BufReader::new(std::fs::File::open(path)?))),
+    }
+}
 
 #[cfg(test)]
 mod unit_tests {
