@@ -99,7 +99,7 @@ fn parse_ranges(range: &str) -> Result<Vec<RangeInclusive<usize>>> {
 fn parse_range(range: &str) -> Result<RangeInclusive<usize>> {
     let result: Result<Vec<NonZeroUsize>, _> = range
         .split('-')
-        .map(|x| x.parse())
+        .map(str::parse)
         .collect();
 
     // Input: inclusive range as indexes, positive indexes
@@ -136,7 +136,7 @@ pub fn run(config: Config) -> Result<()> {
 fn process_file(path: &str, reader: Box<dyn BufRead>, config: &Config) {
     for line in reader.lines() {
         match line {
-            Err(error) => eprintln!("Can't read line from file '{}', error {}", path, error),
+            Err(error) => eprintln!("Can't read line from file '{path}', error {error}"),
             Ok(line) => {
                 //let fields = line.split(config.delimeter).collect::<Vec<&str>>();
                 let extracted = match &config.extracted {
@@ -145,7 +145,7 @@ fn process_file(path: &str, reader: Box<dyn BufRead>, config: &Config) {
                     ExtractedRanges::Fields(ranges) => extract_fields(&line, ranges),
                 };
 
-                println!("{}", extracted);
+                println!("{extracted}");
             }
         }
     }
