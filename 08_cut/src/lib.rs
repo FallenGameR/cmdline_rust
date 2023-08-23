@@ -3,7 +3,7 @@ use clap::{arg, Command};
 use std::{
     io::{BufRead, BufReader},
     num::NonZeroUsize,
-    ops::{Range, RangeInclusive},
+    ops::RangeInclusive,
 };
 
 const PAGE_SIZE: usize = 4096;
@@ -136,20 +136,22 @@ pub fn run(config: Config) -> Result<()> {
     Ok(())
 }
 
-fn process_file(path: &str, mut reader: Box<dyn BufRead>, config: &Config) {
-    unimplemented!()
-    /*
-    let buffer_size = config.bytes.unwrap_or(BUFFER_SIZE);
-    let mut buffer = vec![0; buffer_size];
+fn process_file(path: &str, reader: Box<dyn BufRead>, config: &Config) {
+    for line in reader.lines() {
+        match line {
+            Err(error) => eprintln!("Can't read line from file '{}', error {}", path, error),
+            Ok(line) => {
+                //let fields = line.split(config.delimeter).collect::<Vec<&str>>();
+                let extracted = match &config.extracted {
+                    ExtractedRanges::Bytes(ranges) => extract_bytes(&line, ranges),
+                    ExtractedRanges::Chars(ranges) => extract_chars(&line, ranges),
+                    ExtractedRanges::Fields(ranges) => extract_fields(&line, ranges),
+                };
 
-    // Alternatively we could do the following:
-    // reader.bytes().take(buffer_size as u64);
-
-    match reader.read(&mut buffer) {
-        Ok(len) => process_buffer(&buffer[0..len], config),
-        Err(error) => eprintln!("Can't open file '{}', error {}", path, error),
+                println!("{}", extracted);
+            }
+        }
     }
-    */
 }
 
 /*
@@ -173,7 +175,19 @@ fn process_buffer(buffer: &[u8], config: &Config) {
 */
 
 fn extract_chars(line: &str, ranges: &Positions) -> String {
-    unimplemented!()
+    let mut result = Vec::new();
+
+    for range in ranges {
+        let mut extracted = String::new();
+        for index in range.clone().into_iter() {
+            if let Some(char) = line.chars().nth(index) {
+                extracted.push(char);
+            }
+        }
+        result.push(extracted);
+    }
+
+    result.join(",")
 }
 
 fn extract_bytes(line: &str, ranges: &Positions) -> String {
@@ -193,7 +207,7 @@ fn open(path: &str) -> Result<Box<dyn BufRead>> {
 
 #[cfg(test)]
 mod unit_tests {
-    //extract_bytes, extract_chars, extract_fields,
+    use crate::extract_chars;
     use super::parse_ranges;
     //use csv::StringRecord;
 
@@ -353,6 +367,19 @@ mod unit_tests {
 
     /*
     #[test]
+    fn test_extract_chars() {
+        assert_eq!(extract_chars("", &[0..1]), "".to_string());
+        assert_eq!(extract_chars("ábc", &[0..1]), "á".to_string());
+        assert_eq!(extract_chars("ábc", &[0..1, 2..3]), "ác".to_string());
+        assert_eq!(extract_chars("ábc", &[0..3]), "ábc".to_string());
+        assert_eq!(extract_chars("ábc", &[2..3, 1..2]), "cb".to_string());
+        assert_eq!(
+            extract_chars("ábc", &[0..1, 1..2, 4..5]),
+            "áb".to_string()
+        );
+    }
+
+    #[test]
     fn test_extract_fields() {
         let rec = StringRecord::from(vec!["Captain", "Sham", "12345"]);
         assert_eq!(extract_fields(&rec, &[0..1]), &["Captain"]);
@@ -365,18 +392,7 @@ mod unit_tests {
         assert_eq!(extract_fields(&rec, &[1..2, 0..1]), &["Sham", "Captain"]);
     }
 
-    #[test]
-    fn test_extract_chars() {
-        assert_eq!(extract_chars("", &[0..1]), "".to_string());
-        assert_eq!(extract_chars("ábc", &[0..1]), "á".to_string());
-        assert_eq!(extract_chars("ábc", &[0..1, 2..3]), "ác".to_string());
-        assert_eq!(extract_chars("ábc", &[0..3]), "ábc".to_string());
-        assert_eq!(extract_chars("ábc", &[2..3, 1..2]), "cb".to_string());
-        assert_eq!(
-            extract_chars("ábc", &[0..1, 1..2, 4..5]),
-            "áb".to_string()
-        );
-    }
+
 
     #[test]
     fn test_extract_bytes() {
