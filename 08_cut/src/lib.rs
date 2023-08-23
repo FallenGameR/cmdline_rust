@@ -114,7 +114,7 @@ fn parse_range(range: &str) -> Result<RangeInclusive<usize>> {
             bail!("Positions start at one, zero is invalid value");
         }
 
-        Ok(start - 1..=end)
+        Ok(start - 1..=end-1)
     };
 
     if let Ok(res) = result {
@@ -316,7 +316,7 @@ mod unit_tests {
 
         let res = parse_ranges("+1-2");
         assert!(res.is_ok());
-        assert_eq!(res.unwrap(), vec![0..=2]);
+        assert_eq!(res.unwrap(), vec![0..=1]);
 
         let res = parse_ranges("1-+2");
         assert!(res.is_ok());
