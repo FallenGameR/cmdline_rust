@@ -58,11 +58,11 @@ pub fn run(config: Config) -> DynErrorResult<()> {
         entry_separator_needed = true;
 
         if mutifile_handling {
-            println!("==> {} <==", path);
+            println!("==> {path} <==");
         }
 
-        match open(&path) {
-            Ok(reader) => process_file(&path, reader, &config),
+        match open(path) {
+            Ok(reader) => process_file(path, reader, &config),
             Err(error) => eprintln!("Can't open file '{}', error {}", &path, error),
         }
     }
@@ -86,7 +86,7 @@ fn process_file(path: &str, mut reader: Box<dyn BufRead>, config: &Config) {
 
     match reader.read(&mut buffer) {
         Ok(len) => process_buffer(&buffer[0..len], config),
-        Err(error) => eprintln!("Can't open file '{}', error {}", path, error),
+        Err(error) => eprintln!("Can't open file '{path}', error {error}"),
     }
 }
 
@@ -95,7 +95,7 @@ fn process_buffer(buffer: &[u8], config: &Config) {
     let mut line_count = 0;
 
     for char in text.chars() {
-        print!("{}", char);
+        print!("{char}");
 
         if char == '\n' {
             line_count += 1;
