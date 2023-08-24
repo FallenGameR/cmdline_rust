@@ -22,7 +22,7 @@ pub fn get_args() -> DynErrorResult<Config> {
             arg!([files] ... "Input files to concatenate, stdin is -").default_value("-"),
             arg!(-n --number_lines "Add line numbers to output")
                 .conflicts_with("number_nonblank_lines"),
-            arg!(-b --number_nonblank_lines "Number only nonblack lines")
+            arg!(-b --number_nonblank_lines "Number only nonblank lines")
                 .conflicts_with("number_lines"),
         ])
         .get_matches();

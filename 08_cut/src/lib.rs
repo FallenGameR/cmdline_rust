@@ -171,27 +171,54 @@ fn process_buffer(buffer: &[u8], config: &Config) {
 }
 */
 
-fn extract_chars(line: &str, ranges: &[RangeInclusive<usize>]) -> String {
-    let mut result = Vec::new();
+/*
+fn extract<'a>(line: &'a str, ranges: &[RangeInclusive<usize>], extractor: fn(&'a str) -> &'a str) -> String {
+    let mut extracted = String::new();
 
     for range in ranges {
-        let mut extracted = String::new();
         for index in range.clone() {
             if let Some(char) = line.chars().nth(index) {
                 extracted.push(char);
             }
         }
-        result.push(extracted);
     }
 
-    result.join("")
+    extracted
+}
+*/
+
+fn extract_chars(line: &str, ranges: &[RangeInclusive<usize>]) -> String {
+    let mut result = String::new();
+
+    for range in ranges {
+        for index in range.clone() {
+            if let Some(char) = line.chars().nth(index) {
+                result.push(char);
+            }
+        }
+    }
+
+    result
 }
 
-fn extract_bytes(line: &str, ranges: &Positions) -> String {
-    unimplemented!()
+fn extract_bytes(line: &str, ranges: &[RangeInclusive<usize>]) -> String {
+    let mut result = String::new();
+
+    for range in ranges {
+        let mut extracted = Vec::<u8>::new();
+        for index in range.clone() {
+            if let Some(byte) = line.bytes().nth(index){
+                extracted.push(byte);
+            }
+        }
+        let extracted_string = String::from_utf8_lossy(&extracted).to_owned();
+        result.push_str(extracted_string.as_ref());
+    }
+
+    result
 }
 
-fn extract_fields(line: &str, ranges: &Positions) -> String {
+fn extract_fields(line: &str, ranges: &[RangeInclusive<usize>]) -> String {
     unimplemented!()
 }
 
@@ -204,9 +231,8 @@ fn open(path: &str) -> Result<Box<dyn BufRead>> {
 
 #[cfg(test)]
 mod unit_tests {
-    use crate::extract_chars;
+    use crate::{extract_chars, extract_bytes};
     use super::parse_ranges;
-    //use csv::StringRecord;
 
     #[test]
     fn test_parse_ranges() {
@@ -375,6 +401,16 @@ mod unit_tests {
         );
     }
 
+    #[test]
+    fn test_extract_bytes() {
+        assert_eq!(extract_bytes("ábc", &[0..=0]), "�".to_string());
+        assert_eq!(extract_bytes("ábc", &[0..=1]), "á".to_string());
+        assert_eq!(extract_bytes("ábc", &[0..=2]), "áb".to_string());
+        assert_eq!(extract_bytes("ábc", &[0..=3]), "ábc".to_string());
+        assert_eq!(extract_bytes("ábc", &[3..=3, 2..=2]), "cb".to_string());
+        assert_eq!(extract_bytes("ábc", &[0..=1, 5..=5]), "á".to_string());
+    }
+
     /*
     #[test]
     fn test_extract_fields() {
@@ -387,18 +423,6 @@ mod unit_tests {
         );
         assert_eq!(extract_fields(&rec, &[0..1, 3..4]), &["Captain"]);
         assert_eq!(extract_fields(&rec, &[1..2, 0..1]), &["Sham", "Captain"]);
-    }
-
-
-
-    #[test]
-    fn test_extract_bytes() {
-        assert_eq!(extract_bytes("ábc", &[0..1]), "�".to_string());
-        assert_eq!(extract_bytes("ábc", &[0..2]), "á".to_string());
-        assert_eq!(extract_bytes("ábc", &[0..3]), "áb".to_string());
-        assert_eq!(extract_bytes("ábc", &[0..4]), "ábc".to_string());
-        assert_eq!(extract_bytes("ábc", &[3..4, 2..3]), "cb".to_string());
-        assert_eq!(extract_bytes("ábc", &[0..2, 5..6]), "á".to_string());
     }
     */
 }
