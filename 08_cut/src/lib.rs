@@ -177,8 +177,8 @@ fn extract_bytes(line: &str, ranges: &[RangeInclusive<usize>]) -> String {
                 extracted.push(byte);
             }
         }
-        let extracted_string = String::from_utf8_lossy(&extracted).to_owned();
-        result.push_str(extracted_string.as_ref());
+        let extracted_string = String::from_utf8_lossy(&extracted);
+        result.push_str(&extracted_string);
     }
 
     result
@@ -380,7 +380,7 @@ mod unit_tests {
 
     #[test]
     fn test_extract_chars() {
-        assert_eq!(extract_chars("", &[0..=0]), "".to_string());
+        assert_eq!(extract_chars("", &[0..=0]), String::new());
         assert_eq!(extract_chars("ábc", &[0..=0]), "á".to_string());
         assert_eq!(extract_chars("ábc", &[0..=0, 2..=2]), "ác".to_string());
         assert_eq!(extract_chars("ábc", &[0..=2]), "ábc".to_string());
