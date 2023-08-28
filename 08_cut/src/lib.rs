@@ -173,8 +173,8 @@ fn extract_bytes(line: &str, ranges: &[RangeInclusive<usize>]) -> String {
     for range in ranges {
         let mut extracted = Vec::<u8>::new();
         for index in range.clone() {
-            if let Some(byte) = line.bytes().nth(index) {
-                extracted.push(byte);
+            if let Some(byte) = line.as_bytes().get(index) {
+                extracted.push(*byte);
             }
         }
         let extracted_string = String::from_utf8_lossy(&extracted);
@@ -225,6 +225,7 @@ mod unit_tests {
     use crate::{extract_bytes, extract_chars, extract_fields_internal};
 
     #[test]
+    #[allow(clippy::too_many_lines)]
     fn test_parse_ranges() {
         // The empty string is an error
         assert!(parse_ranges("").is_err());
