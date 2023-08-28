@@ -153,55 +153,6 @@ fn process_file(path: &str, reader: Box<dyn BufRead>, config: &Config) -> Result
     Ok(())
 }
 
-fn ranges_iter(ranges: &[RangeInclusive<usize>]) -> impl Iterator<Item = usize> {
-    let mut indexes = Vec::<usize>::new();
-
-    for range in ranges {
-        let range = range.clone();
-
-        if range.start() <= range.end() {
-            for index in range {
-                indexes.push(index);
-            }
-        } else {
-            let range = *range.end()..=*range.start();
-            for index in range.rev() {
-                indexes.push(index);
-            }
-        }
-    }
-
-    indexes.into_iter()
-}
-
-
-    /*
-    let forward: RangeInclusive<usize> = 0..=1;
-    let backward = forward.clone().rev();
-    let forwardBox = Box::new(forward) as Box<dyn Iterator<Item = usize>>;
-    let backwardBox = Box::new(backward) as Box<dyn Iterator<Item = usize>>;
-
-    if true {
-        return forwardBox;
-    }
-    else {
-        return backwardBox;
-    }
-
-    let ranges = ranges.iter().flat_map(|range| range.into());
-
-    ranges.map(|range| {
-        Box::new(range)
-
-        if range.start() <= range.end() {
-            Box::new(result) as Box<dyn Iterator<Item = usize>>
-        } else {
-            let result = range.end().clone() ..= range.start().clone();
-            Box::new(result) as Box<dyn Iterator<Item = usize>>
-        }
-    })
-    */
-
 fn extract_chars(line: &str, ranges: &[RangeInclusive<usize>]) -> String {
     ranges_iter(ranges)
         .filter_map(|i| line.chars().nth(i))
@@ -231,6 +182,25 @@ fn extract_fields_internal(record: &StringRecord, ranges: &[RangeInclusive<usize
     ranges_iter(ranges)
         .filter_map(|i| record.get(i).map(std::borrow::ToOwned::to_owned))
         .collect()
+}
+
+fn ranges_iter(ranges: &[RangeInclusive<usize>]) -> Box<dyn Iterator<Item = usize>> {
+    let mut indexes = Vec::<usize>::new();
+
+    for range in ranges {
+        if range.start() <= range.end() {
+            for index in range.clone() {
+                indexes.push(index);
+            }
+        } else {
+            let range = *range.end()..=*range.start();
+            for index in range.rev() {
+                indexes.push(index);
+            }
+        }
+    }
+
+    Box::new(indexes.into_iter())
 }
 
 fn open(path: &str) -> Result<Box<dyn BufRead>> {
