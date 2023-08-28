@@ -1,5 +1,6 @@
-use anyhow::{bail, Result};
+use anyhow::{bail, Ok, Result};
 use clap::{arg, Command};
+use csv::StringRecord;
 use std::{
     io::{BufRead, BufReader},
     num::NonZeroUsize,
@@ -97,10 +98,7 @@ fn parse_ranges(range: &str) -> Result<Vec<RangeInclusive<usize>>> {
 }
 
 fn parse_range(range: &str) -> Result<RangeInclusive<usize>> {
-    let result: Result<Vec<NonZeroUsize>, _> = range
-        .split('-')
-        .map(str::parse)
-        .collect();
+    let result: Result<Vec<NonZeroUsize>, _> = range.split('-').map(str::parse).collect();
 
     // Input: inclusive range as indexes, positive indexes
     // Output: inclusive range as range, zero-based indexes
@@ -125,7 +123,7 @@ fn parse_range(range: &str) -> Result<RangeInclusive<usize>> {
 pub fn run(config: Config) -> Result<()> {
     for path in &config.files {
         match open(path) {
-            Ok(reader) => process_file(path, reader, &config),
+            Ok(reader) => process_file(path, reader, &config)?,
             Err(error) => eprintln!("Can't open file '{}', error {}", &path, error),
         }
     }
@@ -133,7 +131,7 @@ pub fn run(config: Config) -> Result<()> {
     Ok(())
 }
 
-fn process_file(path: &str, reader: Box<dyn BufRead>, config: &Config) {
+fn process_file(path: &str, reader: Box<dyn BufRead>, config: &Config) -> Result<()> {
     for line in reader.lines() {
         match line {
             Err(error) => eprintln!("Can't read line from file '{path}', error {error}"),
@@ -142,50 +140,18 @@ fn process_file(path: &str, reader: Box<dyn BufRead>, config: &Config) {
                 let extracted = match &config.extracted {
                     ExtractedRanges::Bytes(ranges) => extract_bytes(&line, ranges),
                     ExtractedRanges::Chars(ranges) => extract_chars(&line, ranges),
-                    ExtractedRanges::Fields(ranges) => extract_fields(&line, ranges),
+                    ExtractedRanges::Fields(ranges) => {
+                        extract_fields(&line, config.delimeter, ranges)?
+                    }
                 };
 
                 println!("{extracted}");
             }
         }
     }
+
+    Ok(())
 }
-
-/*
-fn process_buffer(buffer: &[u8], config: &Config) {
-    unimplemented!()
-    let text = String::from_utf8_lossy(buffer);
-    let mut line_count = 0;
-
-    for char in text.chars() {
-        print!("{}", char);
-
-        if char == '\n' {
-            line_count += 1;
-        }
-
-        if line_count >= config.lines {
-            break;
-        }
-    }
-}
-*/
-
-/*
-fn extract<'a>(line: &'a str, ranges: &[RangeInclusive<usize>], extractor: fn(&'a str) -> &'a str) -> String {
-    let mut extracted = String::new();
-
-    for range in ranges {
-        for index in range.clone() {
-            if let Some(char) = line.chars().nth(index) {
-                extracted.push(char);
-            }
-        }
-    }
-
-    extracted
-}
-*/
 
 fn extract_chars(line: &str, ranges: &[RangeInclusive<usize>]) -> String {
     let mut result = String::new();
@@ -207,7 +173,7 @@ fn extract_bytes(line: &str, ranges: &[RangeInclusive<usize>]) -> String {
     for range in ranges {
         let mut extracted = Vec::<u8>::new();
         for index in range.clone() {
-            if let Some(byte) = line.bytes().nth(index){
+            if let Some(byte) = line.bytes().nth(index) {
                 extracted.push(byte);
             }
         }
@@ -218,8 +184,36 @@ fn extract_bytes(line: &str, ranges: &[RangeInclusive<usize>]) -> String {
     result
 }
 
-fn extract_fields(line: &str, ranges: &[RangeInclusive<usize>]) -> String {
-    unimplemented!()
+// https://docs.rs/csv/latest/csv/tutorial/index.html
+fn extract_fields(line: &str, delimeter: char, ranges: &[RangeInclusive<usize>]) -> Result<String> {
+    let mut reader = csv::ReaderBuilder::new()
+        .has_headers(false)
+        .delimiter(delimeter as u8)
+        .from_reader(line.as_bytes());
+
+    let record = reader.records().next().expect("No fields found")?;
+    let fields = extract_fields_internal(&record, ranges);
+
+    let mut result = String::new();
+    for field in fields {
+        result.push_str(&field);
+    }
+
+    Ok(result)
+}
+
+fn extract_fields_internal(record: &StringRecord, ranges: &[RangeInclusive<usize>]) -> Vec<String> {
+    let mut result = Vec::new();
+
+    for range in ranges {
+        for index in range.clone() {
+            if let Some(field) = record.get(index) {
+                result.push(field.into());
+            }
+        }
+    }
+
+    result
 }
 
 fn open(path: &str) -> Result<Box<dyn BufRead>> {
@@ -231,8 +225,10 @@ fn open(path: &str) -> Result<Box<dyn BufRead>> {
 
 #[cfg(test)]
 mod unit_tests {
-    use crate::{extract_chars, extract_bytes};
+    use csv::StringRecord;
+
     use super::parse_ranges;
+    use crate::{extract_bytes, extract_chars, extract_fields_internal};
 
     #[test]
     fn test_parse_ranges() {
@@ -411,18 +407,16 @@ mod unit_tests {
         assert_eq!(extract_bytes("ábc", &[0..=1, 5..=5]), "á".to_string());
     }
 
-    /*
     #[test]
     fn test_extract_fields() {
         let rec = StringRecord::from(vec!["Captain", "Sham", "12345"]);
-        assert_eq!(extract_fields(&rec, &[0..1]), &["Captain"]);
-        assert_eq!(extract_fields(&rec, &[1..2]), &["Sham"]);
+        assert_eq!(extract_fields_internal(&rec, &[0..=0]), &["Captain"]);
+        assert_eq!(extract_fields_internal(&rec, &[1..=1]), &["Sham"]);
         assert_eq!(
-            extract_fields(&rec, &[0..1, 2..3]),
+            extract_fields_internal(&rec, &[0..=0, 2..=2]),
             &["Captain", "12345"]
         );
-        assert_eq!(extract_fields(&rec, &[0..1, 3..4]), &["Captain"]);
-        assert_eq!(extract_fields(&rec, &[1..2, 0..1]), &["Sham", "Captain"]);
+        assert_eq!(extract_fields_internal(&rec, &[0..=0, 3..=3]), &["Captain"]);
+        assert_eq!(extract_fields_internal(&rec, &[1..=1, 0..=0]), &["Sham", "Captain"]);
     }
-    */
 }
