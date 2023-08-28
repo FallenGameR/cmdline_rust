@@ -161,12 +161,12 @@ fn ranges_iter(ranges: &[RangeInclusive<usize>]) -> impl Iterator<Item = usize> 
 
         if range.start() <= range.end() {
             for index in range {
-                println!("index: {}", index);
+                //println!("index: {}", index);
                 indexes.push(index);
             }
         } else {
             for index in range.rev() {
-                println!("r index: {}", index);
+                //println!("r index: {}", index);
                 indexes.push(index);
             }
         }
@@ -210,20 +210,10 @@ fn extract_chars(line: &str, ranges: &[RangeInclusive<usize>]) -> String {
 }
 
 fn extract_bytes(line: &str, ranges: &[RangeInclusive<usize>]) -> String {
-    let mut result = String::new();
-
-    for range in ranges {
-        let mut extracted = Vec::<u8>::new();
-        for index in range.clone() {
-            if let Some(byte) = line.as_bytes().get(index) {
-                extracted.push(*byte);
-            }
-        }
-        let extracted_string = String::from_utf8_lossy(&extracted);
-        result.push_str(&extracted_string);
-    }
-
-    result
+    let bytes: Vec<u8> = ranges_iter(ranges)
+        .filter_map(|i| line.as_bytes().get(i).cloned())
+        .collect();
+    String::from_utf8_lossy(&bytes).into()
 }
 
 // https://docs.rs/csv/latest/csv/tutorial/index.html
