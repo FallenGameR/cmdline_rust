@@ -153,18 +153,14 @@ fn process_file(path: &str, reader: Box<dyn BufRead>, config: &Config) -> Result
     Ok(())
 }
 
+fn ranges_iter<'r>(ranges: &'r [RangeInclusive<usize>]) -> impl Iterator<Item = usize> + 'r {
+    ranges.iter().flat_map(|range| range.clone())
+}
+
 fn extract_chars(line: &str, ranges: &[RangeInclusive<usize>]) -> String {
-    let mut result = String::new();
-
-    for range in ranges {
-        for index in range.clone() {
-            if let Some(char) = line.chars().nth(index) {
-                result.push(char);
-            }
-        }
-    }
-
-    result
+    ranges_iter(ranges)
+        .filter_map(|i| line.chars().nth(i))
+        .collect()
 }
 
 fn extract_bytes(line: &str, ranges: &[RangeInclusive<usize>]) -> String {
@@ -412,6 +408,9 @@ mod unit_tests {
             &["Captain", "12345"]
         );
         assert_eq!(extract_fields_internal(&rec, &[0..=0, 3..=3]), &["Captain"]);
-        assert_eq!(extract_fields_internal(&rec, &[1..=1, 0..=0]), &["Sham", "Captain"]);
+        assert_eq!(
+            extract_fields_internal(&rec, &[1..=1, 0..=0]),
+            &["Sham", "Captain"]
+        );
     }
 }
