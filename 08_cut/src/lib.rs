@@ -161,12 +161,11 @@ fn ranges_iter(ranges: &[RangeInclusive<usize>]) -> impl Iterator<Item = usize> 
 
         if range.start() <= range.end() {
             for index in range {
-                //println!("index: {}", index);
                 indexes.push(index);
             }
         } else {
+            let range = range.end().clone()..=range.start().clone();
             for index in range.rev() {
-                //println!("r index: {}", index);
                 indexes.push(index);
             }
         }
