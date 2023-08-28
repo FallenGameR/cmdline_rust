@@ -153,8 +153,17 @@ fn process_file(path: &str, reader: Box<dyn BufRead>, config: &Config) -> Result
     Ok(())
 }
 
-fn ranges_iter<'r>(ranges: &'r [RangeInclusive<usize>]) -> impl Iterator<Item = usize> + 'r {
-    ranges.iter().flat_map(|range| range.clone())
+fn ranges_iter(ranges: &[RangeInclusive<usize>]) -> Box<impl Iterator<Item = usize>> {
+    ranges.iter().flat_map(|range| {
+        let result = range.to_owned();
+
+        if range.start() <= range.end() {
+            Box::new(result)
+        } else {
+            let result = range.end().clone() ..= range.start().clone();
+            Box::new(result)
+        }
+    }).into()
 }
 
 fn extract_chars(line: &str, ranges: &[RangeInclusive<usize>]) -> String {
