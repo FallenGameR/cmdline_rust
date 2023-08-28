@@ -1,4 +1,4 @@
-use anyhow::{bail, Ok, Result};
+use anyhow::{bail, Result};
 use clap::{arg, Command};
 use csv::StringRecord;
 use std::{
