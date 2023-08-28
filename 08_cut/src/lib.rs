@@ -157,14 +157,14 @@ fn ranges_iter(ranges: &[RangeInclusive<usize>]) -> impl Iterator<Item = usize> 
     let mut indexes = Vec::<usize>::new();
 
     for range in ranges {
-        let range = range.to_owned();
+        let range = range.clone();
 
         if range.start() <= range.end() {
             for index in range {
                 indexes.push(index);
             }
         } else {
-            let range = range.end().clone()..=range.start().clone();
+            let range = *range.end()..=*range.start();
             for index in range.rev() {
                 indexes.push(index);
             }
@@ -210,7 +210,7 @@ fn extract_chars(line: &str, ranges: &[RangeInclusive<usize>]) -> String {
 
 fn extract_bytes(line: &str, ranges: &[RangeInclusive<usize>]) -> String {
     let bytes: Vec<u8> = ranges_iter(ranges)
-        .filter_map(|i| line.as_bytes().get(i).cloned())
+        .filter_map(|i| line.as_bytes().get(i).copied())
         .collect();
     String::from_utf8_lossy(&bytes).into()
 }
@@ -229,7 +229,7 @@ fn extract_fields(line: &str, delimeter: char, ranges: &[RangeInclusive<usize>])
 
 fn extract_fields_internal(record: &StringRecord, ranges: &[RangeInclusive<usize>]) -> Vec<String> {
     ranges_iter(ranges)
-        .filter_map(|i| record.get(i).map(|s| s.to_owned()))
+        .filter_map(|i| record.get(i).map(std::borrow::ToOwned::to_owned))
         .collect()
 }
 
