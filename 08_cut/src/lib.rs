@@ -193,13 +193,7 @@ fn extract_fields(line: &str, delimeter: char, ranges: &[RangeInclusive<usize>])
 
     let record = reader.records().next().expect("No fields found")?;
     let fields = extract_fields_internal(&record, ranges);
-
-    let mut result = String::new();
-    for field in fields {
-        result.push_str(&field);
-    }
-
-    Ok(result)
+    Ok(fields.join(&delimeter.to_string()))
 }
 
 fn extract_fields_internal(record: &StringRecord, ranges: &[RangeInclusive<usize>]) -> Vec<String> {
