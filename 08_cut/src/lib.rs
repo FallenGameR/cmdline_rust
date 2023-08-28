@@ -229,17 +229,9 @@ fn extract_fields(line: &str, delimeter: char, ranges: &[RangeInclusive<usize>])
 }
 
 fn extract_fields_internal(record: &StringRecord, ranges: &[RangeInclusive<usize>]) -> Vec<String> {
-    let mut result = Vec::new();
-
-    for range in ranges {
-        for index in range.clone() {
-            if let Some(field) = record.get(index) {
-                result.push(field.into());
-            }
-        }
-    }
-
-    result
+    ranges_iter(ranges)
+        .filter_map(|i| record.get(i).map(|s| s.to_owned()))
+        .collect()
 }
 
 fn open(path: &str) -> Result<Box<dyn BufRead>> {
