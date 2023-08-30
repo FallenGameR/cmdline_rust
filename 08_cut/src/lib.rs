@@ -183,19 +183,46 @@ fn extract_fields_internal(record: &StringRecord, ranges: &[RangeInclusive<usize
         .collect()
 }
 
-struct RangeIter<'a> {
-    ranges: &'a [RangeInclusive<usize>]
+struct RangeIter<T>
+{
+    outer_iter: Box<dyn Iterator<Item = RangeInclusive<T>>>,
+    inner_iter: Box<dyn Iterator<Item = T>>,
+    count: usize,
 }
 
-impl<'a> Iterator for RangeIter<'a> {
-    type Item = usize;
+impl<T> RangeIter<T>
+where T: std::cmp::PartialOrd
+{
+    fn new(ranges: &dyn Iterator<Item = RangeInclusive<T>>) -> Self {
+        let test = ranges.as_ref().into();
 
-    fn new(ranges: &'a [RangeInclusive<usize>]) -> Self {
-        Self { ranges }
+        Self {
+            outer_iter: todo!(),
+            inner_iter: todo!(),
+            count: todo!()
+         }
     }
 
+    fn range_iter_count() -> usize {
+        let mut count = 0;
+
+        for range in self.ranges {
+            if range.start() <= range.end() {
+                count += range.end() - range.start() + 1;
+            } else {
+                count += range.start() - range.end() + 1;
+            }
+        }
+
+        count
+    }
+}
+
+impl<T> Iterator for RangeIter<T> {
+    type Item = usize;
+
     fn next(&mut self) -> Option<Self::Item> {
-        self.ranges.iter().find_map(|range| {
+        self.outer_iter.find_map(|range| {
             if range.start() <= range.end() {
                 range.clone().next()
             } else {
@@ -205,7 +232,7 @@ impl<'a> Iterator for RangeIter<'a> {
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let count = range_iter_count(self.ranges);
+        let count = self.range_iter_count();
         (count, Some(count))
     }
 
@@ -213,23 +240,13 @@ impl<'a> Iterator for RangeIter<'a> {
     where
         Self: Sized,
     {
-        range_iter_count(self.ranges)
+        self.range_iter_count()
     }
 }
 
-fn range_iter_count(ranges: &[RangeInclusive<usize>]) -> usize {
-    let mut count = 0;
 
-    for range in ranges {
-        if range.start() <= range.end() {
-            count += range.end() - range.start() + 1;
-        } else {
-            count += range.start() - range.end() + 1;
-        }
-    }
 
-    count
-}
+
 
 fn ranges_iter(ranges: &[RangeInclusive<usize>]) -> Box<dyn Iterator<Item = usize>> {
     let mut indexes = Vec::<usize>::new();
