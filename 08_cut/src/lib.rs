@@ -183,41 +183,66 @@ fn extract_fields_internal(record: &StringRecord, ranges: &[RangeInclusive<usize
         .collect()
 }
 
-struct RangeIter<T>
+struct RangeIter
 {
-    // why I can't store reference here?
-    all_ranges: Box<dyn Iterator<Item = RangeInclusive<T>>>,
-    current_range: Option<RangeInclusive<T>>,
+    ranges: Vec<RangeInclusive<usize>>,
+    range_idx: usize,
+
+    current: Option<usize>,
+    forward: Option<bool>,
 }
 
-impl<T> RangeIter<T>
+impl RangeIter
 {
-    fn new(ranges: &mut dyn Iterator<Item = RangeInclusive<T>>) -> Self {
+    fn new(ranges: &[RangeInclusive<usize>]) -> Self {
         Self {
-            all_ranges: Box::new(ranges),
-            current_range: None,
+            ranges: ranges.to_vec(),
+            range_idx: 0,
+            current: None,
+            forward: None,
          }
+    }
+
+    fn yield_return(&mut self) {
+        for range in self.ranges {
+            if range.start() <= range.end() {
+                let start = range.start();
+                let end = range.end();
+                let direction = 1;
+            } else {
+                let start = range.end();
+                let end = range.start();
+                let direction = -1;
+            }
+
+            for( int i = start; i != end; i += direction ) {
+                println!(index);
+            }
+        }
     }
 }
 
-impl<T> Iterator for RangeIter<T>
+impl Iterator for RangeIter
 {
     type Item = usize;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.current_range.is_none() {
-            // need to support the reverse iterator case as well
-            self.current_range = self.all_ranges.next();
+        let range = self.ranges.get(self.range_idx)?;
+
+        if self.current.is_none() {
+            let forward = range.start() <= range.end();
+            self.forward = Some(forward);
+            self.current = Some(if forward{ *range.start() } else { *range.end() });
         }
 
-        match self.current_range {
-            Some(range) => {
-                let test = range.next();
-                if test.is_none() {
-                    self.current_range = None;
-                }
-            },
-            None => return None,
+        yield return self.current;
+
+        self.current = self.current + self.forward;
+
+        if( self.current == range.end() ) {
+            self.range_idx += 1;
+            self.current = None;
+            return self.next();
         }
     }
 }
