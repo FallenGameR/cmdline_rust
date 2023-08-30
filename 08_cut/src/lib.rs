@@ -4,7 +4,7 @@ use csv::StringRecord;
 use std::{
     io::{BufRead, BufReader},
     num::NonZeroUsize,
-    ops::RangeInclusive,
+    ops::RangeInclusive, iter::Step,
 };
 
 type Positions = Vec<RangeInclusive<usize>>;
@@ -185,68 +185,42 @@ fn extract_fields_internal(record: &StringRecord, ranges: &[RangeInclusive<usize
 
 struct RangeIter<T>
 {
-    outer_iter: Box<dyn Iterator<Item = RangeInclusive<T>>>,
-    inner_iter: Box<dyn Iterator<Item = T>>,
-    count: usize,
+    // why I can't store reference here?
+    all_ranges: Box<dyn Iterator<Item = RangeInclusive<T>>>,
+    current_range: Option<RangeInclusive<T>>,
 }
 
 impl<T> RangeIter<T>
-where T: std::cmp::PartialOrd
 {
-    fn new(ranges: &dyn Iterator<Item = RangeInclusive<T>>) -> Self {
-        let test = ranges.as_ref().into();
-
+    fn new(ranges: &mut dyn Iterator<Item = RangeInclusive<T>>) -> Self {
         Self {
-            outer_iter: todo!(),
-            inner_iter: todo!(),
-            count: todo!()
+            all_ranges: Box::new(ranges),
+            current_range: None,
          }
-    }
-
-    fn range_iter_count() -> usize {
-        let mut count = 0;
-
-        for range in self.ranges {
-            if range.start() <= range.end() {
-                count += range.end() - range.start() + 1;
-            } else {
-                count += range.start() - range.end() + 1;
-            }
-        }
-
-        count
     }
 }
 
-impl<T> Iterator for RangeIter<T> {
+impl<T> Iterator for RangeIter<T>
+{
     type Item = usize;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.outer_iter.find_map(|range| {
-            if range.start() <= range.end() {
-                range.clone().next()
-            } else {
-                range.clone().rev().next()
-            }
-        })
-    }
+        if self.current_range.is_none() {
+            // need to support the reverse iterator case as well
+            self.current_range = self.all_ranges.next();
+        }
 
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        let count = self.range_iter_count();
-        (count, Some(count))
-    }
-
-    fn count(self) -> usize
-    where
-        Self: Sized,
-    {
-        self.range_iter_count()
+        match self.current_range {
+            Some(range) => {
+                let test = range.next();
+                if test.is_none() {
+                    self.current_range = None;
+                }
+            },
+            None => return None,
+        }
     }
 }
-
-
-
-
 
 fn ranges_iter(ranges: &[RangeInclusive<usize>]) -> Box<dyn Iterator<Item = usize>> {
     let mut indexes = Vec::<usize>::new();
