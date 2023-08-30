@@ -136,7 +136,6 @@ fn process_file(path: &str, reader: Box<dyn BufRead>, config: &Config) -> Result
         match line {
             Err(error) => eprintln!("Can't read line from file '{path}', error {error}"),
             Ok(line) => {
-                //let fields = line.split(config.delimeter).collect::<Vec<&str>>();
                 let extracted = match &config.extracted {
                     ExtractedRanges::Bytes(ranges) => extract_bytes(&line, ranges),
                     ExtractedRanges::Chars(ranges) => extract_chars(&line, ranges),
@@ -182,6 +181,54 @@ fn extract_fields_internal(record: &StringRecord, ranges: &[RangeInclusive<usize
     ranges_iter(ranges)
         .filter_map(|i| record.get(i).map(std::borrow::ToOwned::to_owned))
         .collect()
+}
+
+struct RangeIter<'a> {
+    ranges: &'a [RangeInclusive<usize>]
+}
+
+impl<'a> Iterator for RangeIter<'a> {
+    type Item = usize;
+
+    fn new(ranges: &'a [RangeInclusive<usize>]) -> Self {
+        Self { ranges }
+    }
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.ranges.iter().find_map(|range| {
+            if range.start() <= range.end() {
+                range.clone().next()
+            } else {
+                range.clone().rev().next()
+            }
+        })
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let count = range_iter_count(self.ranges);
+        (count, Some(count))
+    }
+
+    fn count(self) -> usize
+    where
+        Self: Sized,
+    {
+        range_iter_count(self.ranges)
+    }
+}
+
+fn range_iter_count(ranges: &[RangeInclusive<usize>]) -> usize {
+    let mut count = 0;
+
+    for range in ranges {
+        if range.start() <= range.end() {
+            count += range.end() - range.start() + 1;
+        } else {
+            count += range.start() - range.end() + 1;
+        }
+    }
+
+    count
 }
 
 fn ranges_iter(ranges: &[RangeInclusive<usize>]) -> Box<dyn Iterator<Item = usize>> {
