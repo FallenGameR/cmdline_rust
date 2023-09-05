@@ -181,20 +181,28 @@ fn extract_fields(line: &str, delimeter: char, ranges: &[RangeInclusive<usize>])
         .has_headers(false)
         .delimiter(delimeter as u8)
         .from_reader(line.as_bytes());
-
     let record = reader.records().next().expect("No fields found")?;
+
+    // Could be inlined, but tests depend on extract_fields_internal
+    // let fields: Vec<&str> = ranges_iter(ranges).filter_map(|i| record.get(i)).collect();
     let fields = extract_fields_internal(&record, ranges);
 
-    // Could use csv writer here for escaping of space-separated fields
-    // But that would require rewriting process_file that always uses println!()
-    Ok(fields.join(&delimeter.to_string()))
+    let mut writer = csv::WriterBuilder::new()
+        .has_headers(false)
+        .delimiter(delimeter as u8)
+        .from_writer(vec![]);
+    writer.write_record(fields)?;
+    // println! from process_file adds extra newline so we trim it here
+    String::from_utf8(writer.into_inner()?)
+        .map(|v| v.trim().to_string())
+        .map_err(Into::into)
 }
 
-fn extract_fields_internal(record: &StringRecord, ranges: &[RangeInclusive<usize>]) -> Vec<String> {
-    // We could return original &str here
-    ranges_iter(ranges)
-        .filter_map(|i| record.get(i).map(std::borrow::ToOwned::to_owned))
-        .collect()
+fn extract_fields_internal<'rec>(
+    record: &'rec StringRecord,
+    ranges: &[RangeInclusive<usize>],
+) -> Vec<&'rec str> {
+    ranges_iter(ranges).filter_map(|i| record.get(i)).collect()
 }
 
 #[cfg(test)]
