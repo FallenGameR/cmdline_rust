@@ -183,43 +183,16 @@ fn extract_fields_internal(record: &StringRecord, ranges: &[RangeInclusive<usize
         .collect()
 }
 
+enum Direction{
+    Forward,
+    Backward,
+}
+
 struct RangeIter
 {
     ranges: Vec<RangeInclusive<usize>>,
-    range_idx: usize,
-
-    current: Option<usize>,
-    forward: Option<bool>,
-}
-
-impl RangeIter
-{
-    fn new(ranges: &[RangeInclusive<usize>]) -> Self {
-        Self {
-            ranges: ranges.to_vec(),
-            range_idx: 0,
-            current: None,
-            forward: None,
-         }
-    }
-
-    fn yield_return(&mut self) {
-        for range in self.ranges {
-            if range.start() <= range.end() {
-                let start = range.start();
-                let end = range.end();
-                let direction = 1;
-            } else {
-                let start = range.end();
-                let end = range.start();
-                let direction = -1;
-            }
-
-            for( int i = start; i != end; i += direction ) {
-                println!(index);
-            }
-        }
-    }
+    range_ext_idx: usize,
+    range_int_idx: Option<usize>,
 }
 
 impl Iterator for RangeIter
@@ -227,22 +200,42 @@ impl Iterator for RangeIter
     type Item = usize;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let range = self.ranges.get(self.range_idx)?;
+        let range = self.ranges.get(self.range_ext_idx)?;
+        let direction = if range.start() <= range.end() { Direction::Forward } else { Direction::Backward };
 
-        if self.current.is_none() {
-            let forward = range.start() <= range.end();
-            self.forward = Some(forward);
-            self.current = Some(if forward{ *range.start() } else { *range.end() });
+        // Set pointer for the very first time
+        if self.range_int_idx.is_none() {
+            self.range_int_idx = Some(match direction {
+                Direction::Forward => *range.start(),
+                Direction::Backward => *range.end(),
+            });
         }
 
-        yield return self.current;
+        // Did we exhaust the current range?
+        let over_the_range = match direction {
+            Direction::Forward => *range.end() + 1,
+            Direction::Backward => *range.start() - 1,
+        };
 
-        self.current = self.current + self.forward;
-
-        if( self.current == range.end() ) {
-            self.range_idx += 1;
-            self.current = None;
+        if self.range_int_idx == Some(over_the_range) {
+            self.range_ext_idx += 1;
+            self.range_int_idx = None;
             return self.next();
+        }
+
+        // Return the current value and move the pointer
+        match self.range_int_idx {
+            Some(value) => match direction {
+                Direction::Forward =>{
+                    self.range_int_idx = Some(value + 1);
+                    Some(value)
+                },
+                Direction::Backward => {
+                    self.range_int_idx = Some(value - 1);
+                    Some(value)
+                }
+            },
+            None => panic!("Internal error, range_int_idx is None"),
         }
     }
 }
