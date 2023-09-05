@@ -3,6 +3,7 @@ mod ranges;
 use anyhow::{bail, Result};
 use clap::{arg, Command};
 use csv::StringRecord;
+use ranges::ranges_iter;
 use std::{
     io::{BufRead, BufReader},
     num::NonZeroUsize,
@@ -23,6 +24,24 @@ pub struct Config {
     files: Vec<String>,
     extracted: ExtractedRanges,
     delimeter: char,
+}
+
+pub fn run(config: Config) -> Result<()> {
+    for path in &config.files {
+        match open(path) {
+            Ok(reader) => process_file(path, reader, &config)?,
+            Err(error) => eprintln!("Can't open file '{}', error {}", &path, error),
+        }
+    }
+
+    Ok(())
+}
+
+fn open(path: &str) -> Result<Box<dyn BufRead>> {
+    match path {
+        "-" => Ok(Box::new(BufReader::new(std::io::stdin()))),
+        _ => Ok(Box::new(BufReader::new(std::fs::File::open(path)?))),
+    }
 }
 
 pub fn get_args() -> Result<Config> {
@@ -122,17 +141,6 @@ fn parse_range(range: &str) -> Result<RangeInclusive<usize>> {
     }
 }
 
-pub fn run(config: Config) -> Result<()> {
-    for path in &config.files {
-        match open(path) {
-            Ok(reader) => process_file(path, reader, &config)?,
-            Err(error) => eprintln!("Can't open file '{}', error {}", &path, error),
-        }
-    }
-
-    Ok(())
-}
-
 fn process_file(path: &str, reader: Box<dyn BufRead>, config: &Config) -> Result<()> {
     for line in reader.lines() {
         match line {
@@ -183,13 +191,6 @@ fn extract_fields_internal(record: &StringRecord, ranges: &[RangeInclusive<usize
     ranges_iter(ranges)
         .filter_map(|i| record.get(i).map(std::borrow::ToOwned::to_owned))
         .collect()
-}
-
-fn open(path: &str) -> Result<Box<dyn BufRead>> {
-    match path {
-        "-" => Ok(Box::new(BufReader::new(std::io::stdin()))),
-        _ => Ok(Box::new(BufReader::new(std::fs::File::open(path)?))),
-    }
 }
 
 #[cfg(test)]

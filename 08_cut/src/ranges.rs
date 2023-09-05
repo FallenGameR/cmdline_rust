@@ -1,11 +1,11 @@
 use std::ops::RangeInclusive;
 
-struct RangeIndex {
+pub struct RangeIndex {
     ext: usize,
     int: Option<usize>,
 }
 
-struct RangeIter<'a> {
+pub struct RangeIter<'a> {
     ranges: &'a [RangeInclusive<usize>],
     index: RangeIndex,
 }
@@ -52,7 +52,7 @@ impl<'a> Iterator for RangeIter<'a> {
     }
 }
 
-fn ranges_iter(ranges: &[RangeInclusive<usize>]) -> RangeIter {
+pub fn ranges_iter(ranges: &[RangeInclusive<usize>]) -> RangeIter {
     RangeIter::new(ranges)
 }
 
