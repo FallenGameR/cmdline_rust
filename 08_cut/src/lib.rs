@@ -4,7 +4,7 @@ use csv::StringRecord;
 use std::{
     io::{BufRead, BufReader},
     num::NonZeroUsize,
-    ops::RangeInclusive, iter::Step,
+    ops::RangeInclusive,
 };
 
 type Positions = Vec<RangeInclusive<usize>>;
@@ -195,6 +195,16 @@ struct RangeIter
     range_int_idx: Option<usize>,
 }
 
+impl RangeIter {
+    fn new(ranges: &[RangeInclusive<usize>]) -> Self {
+        Self {
+            ranges: ranges.to_vec(),
+            range_ext_idx: 0,
+            range_int_idx: None,
+         }
+    }
+}
+
 impl Iterator for RangeIter
 {
     type Item = usize;
@@ -203,44 +213,48 @@ impl Iterator for RangeIter
         let range = self.ranges.get(self.range_ext_idx)?;
         let direction = if range.start() <= range.end() { Direction::Forward } else { Direction::Backward };
 
-        // Set pointer for the very first time
-        if self.range_int_idx.is_none() {
-            self.range_int_idx = Some(match direction {
-                Direction::Forward => *range.start(),
-                Direction::Backward => *range.end(),
-            });
-        }
-
-        // Did we exhaust the current range?
-        let over_the_range = match direction {
-            Direction::Forward => *range.end() + 1,
-            Direction::Backward => *range.start() - 1,
-        };
-
-        if self.range_int_idx == Some(over_the_range) {
-            self.range_ext_idx += 1;
-            self.range_int_idx = None;
-            return self.next();
-        }
-
         // Return the current value and move the pointer
         match self.range_int_idx {
-            Some(value) => match direction {
-                Direction::Forward =>{
-                    self.range_int_idx = Some(value + 1);
-                    Some(value)
-                },
-                Direction::Backward => {
-                    self.range_int_idx = Some(value - 1);
-                    Some(value)
-                }
+            None => {
+                self.range_int_idx = match direction {
+                    Direction::Forward => Some(*range.start()),
+                    Direction::Backward => Some(*range.end()),
+                };
+                self.next()
             },
-            None => panic!("Internal error, range_int_idx is None"),
+            Some(value) =>{
+                match direction {
+                    Direction::Forward =>{
+                        let next = value.checked_add(1);
+
+                        if value == *range.end() || next.is_none() {
+                            self.range_int_idx = None;
+                            self.range_ext_idx += 1;
+                        } else {
+                            self.range_int_idx = next;
+                        }
+                    },
+                    Direction::Backward => {
+                        let next = value.checked_sub(1);
+
+                        if value == *range.start() || next.is_none() {
+                            self.range_int_idx = None;
+                            self.range_ext_idx += 1;
+                        } else {
+                            self.range_int_idx = next;
+                        }
+                    }
+                }
+                Some(value)
+            }
         }
     }
 }
 
 fn ranges_iter(ranges: &[RangeInclusive<usize>]) -> Box<dyn Iterator<Item = usize>> {
+    return Box::new(RangeIter::new(ranges));
+
+    /*
     let mut indexes = Vec::<usize>::new();
 
     for range in ranges {
@@ -257,6 +271,7 @@ fn ranges_iter(ranges: &[RangeInclusive<usize>]) -> Box<dyn Iterator<Item = usiz
     }
 
     Box::new(indexes.into_iter())
+    */
 }
 
 fn open(path: &str) -> Result<Box<dyn BufRead>> {
