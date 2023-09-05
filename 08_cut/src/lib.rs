@@ -183,13 +183,12 @@ fn extract_fields_internal(record: &StringRecord, ranges: &[RangeInclusive<usize
         .collect()
 }
 
-enum Direction{
+enum Direction {
     Forward,
     Backward,
 }
 
-struct RangeIter
-{
+struct RangeIter {
     ranges: Vec<RangeInclusive<usize>>,
     range_ext_idx: usize,
     range_int_idx: Option<usize>,
@@ -201,47 +200,38 @@ impl RangeIter {
             ranges: ranges.to_vec(),
             range_ext_idx: 0,
             range_int_idx: None,
-         }
+        }
     }
 }
 
-impl Iterator for RangeIter
-{
+impl Iterator for RangeIter {
     type Item = usize;
 
     fn next(&mut self) -> Option<Self::Item> {
         let range = self.ranges.get(self.range_ext_idx)?;
-        let direction = if range.start() <= range.end() { Direction::Forward } else { Direction::Backward };
 
-        // Return the current value and move the pointer
         match self.range_int_idx {
             None => {
+                // Init the internal index
                 self.range_int_idx = Some(*range.start());
                 self.next()
-            },
-            Some(value) =>{
-                match direction {
-                    Direction::Forward =>{
-                        let next = value.checked_add(1);
+            }
+            Some(value) => {
+                // What is the next internal index?
+                let next = if range.start() <= range.end() {
+                    value.checked_add(1)
+                } else {
+                    value.checked_sub(1)
+                };
 
-                        if value == *range.end() || next.is_none() {
-                            self.range_int_idx = None;
-                            self.range_ext_idx += 1;
-                        } else {
-                            self.range_int_idx = next;
-                        }
-                    },
-                    Direction::Backward => {
-                        let next = value.checked_sub(1);
-
-                        if value == *range.end() || next.is_none() {
-                            self.range_int_idx = None;
-                            self.range_ext_idx += 1;
-                        } else {
-                            self.range_int_idx = next;
-                        }
-                    }
+                // Check if we need to move to anther range
+                if value == *range.end() || next.is_none() {
+                    self.range_int_idx = None;
+                    self.range_ext_idx += 1;
+                } else {
+                    self.range_int_idx = next;
                 }
+
                 Some(value)
             }
         }
