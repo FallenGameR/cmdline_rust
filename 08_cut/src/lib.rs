@@ -222,7 +222,7 @@ impl<'a> Iterator for RangeIter<'a> {
                     value.checked_sub(1)
                 };
 
-                // Check if we need to move to anther range
+                // Check if we need to move to another range
                 if value == *range.end() || next.is_none() {
                     self.index = RangeIndex { ext: self.index.ext + 1, int: None };
                 } else {
