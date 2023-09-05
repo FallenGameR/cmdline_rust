@@ -189,6 +189,7 @@ fn extract_fields(line: &str, delimeter: char, ranges: &[RangeInclusive<usize>])
     Ok(fields.join(&delimeter.to_string()))
 }
 
+// Could return original &str
 fn extract_fields_internal(record: &StringRecord, ranges: &[RangeInclusive<usize>]) -> Vec<String> {
     ranges_iter(ranges)
         .filter_map(|i| record.get(i).map(std::borrow::ToOwned::to_owned))
