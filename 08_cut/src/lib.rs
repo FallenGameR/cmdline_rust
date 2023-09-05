@@ -146,15 +146,13 @@ fn process_file(path: &str, reader: Box<dyn BufRead>, config: &Config) -> Result
         match line {
             Err(error) => eprintln!("Can't read line from file '{path}', error {error}"),
             Ok(line) => {
-                let extracted = match &config.extracted {
-                    ExtractedRanges::Bytes(ranges) => extract_bytes(&line, ranges),
-                    ExtractedRanges::Chars(ranges) => extract_chars(&line, ranges),
+                match &config.extracted {
+                    ExtractedRanges::Bytes(ranges) => println!("{}", extract_bytes(&line, ranges)),
+                    ExtractedRanges::Chars(ranges) => println!("{}", extract_chars(&line, ranges)),
                     ExtractedRanges::Fields(ranges) => {
-                        extract_fields(&line, config.delimeter, ranges)?
+                        print!("{}", extract_fields(&line, config.delimeter, ranges)?)
                     }
                 };
-
-                println!("{extracted}");
             }
         }
     }
@@ -182,9 +180,6 @@ fn extract_fields(line: &str, delimeter: char, ranges: &[RangeInclusive<usize>])
         .delimiter(delimeter as u8)
         .from_reader(line.as_bytes());
     let record = reader.records().next().expect("No fields found")?;
-
-    // Could be inlined, but tests depend on extract_fields_internal
-    // let fields: Vec<&str> = ranges_iter(ranges).filter_map(|i| record.get(i)).collect();
     let fields = extract_fields_internal(&record, ranges);
 
     let mut writer = csv::WriterBuilder::new()
@@ -192,12 +187,11 @@ fn extract_fields(line: &str, delimeter: char, ranges: &[RangeInclusive<usize>])
         .delimiter(delimeter as u8)
         .from_writer(vec![]);
     writer.write_record(fields)?;
-    // println! from process_file adds extra newline so we trim it here
-    String::from_utf8(writer.into_inner()?)
-        .map(|v| v.trim().to_string())
-        .map_err(Into::into)
+    String::from_utf8(writer.into_inner()?).map_err(Into::into)
 }
 
+// Could be inlined, but tests depend on extract_fields_internal
+// let fields: Vec<&str> = ranges_iter(ranges).filter_map(|i| record.get(i)).collect();
 fn extract_fields_internal<'rec>(
     record: &'rec StringRecord,
     ranges: &[RangeInclusive<usize>],
