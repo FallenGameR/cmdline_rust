@@ -186,11 +186,12 @@ fn extract_fields(line: &str, delimeter: char, ranges: &[RangeInclusive<usize>])
     let fields = extract_fields_internal(&record, ranges);
 
     // Could use csv writer here for escaping of space-separated fields
+    // But that would require rewriting process_file that always uses println!()
     Ok(fields.join(&delimeter.to_string()))
 }
 
-// Could return original &str
 fn extract_fields_internal(record: &StringRecord, ranges: &[RangeInclusive<usize>]) -> Vec<String> {
+    // We could return original &str here
     ranges_iter(ranges)
         .filter_map(|i| record.get(i).map(std::borrow::ToOwned::to_owned))
         .collect()
