@@ -175,11 +175,11 @@ fn extract_bytes(line: &str, ranges: &[RangeInclusive<usize>]) -> String {
 
 // https://docs.rs/csv/latest/csv/tutorial/index.html
 fn extract_fields(line: &str, delimeter: char, ranges: &[RangeInclusive<usize>]) -> Result<String> {
-    let mut reader = csv::ReaderBuilder::new()
+    let reader = csv::ReaderBuilder::new()
         .has_headers(false)
         .delimiter(delimeter as u8)
         .from_reader(line.as_bytes());
-    let record = reader.records().next().expect("No fields found")?;
+    let record = reader.into_records().next().expect("No fields found")?;
     let fields = extract_fields_internal(&record, ranges);
 
     let mut writer = csv::WriterBuilder::new()
