@@ -216,10 +216,7 @@ impl Iterator for RangeIter
         // Return the current value and move the pointer
         match self.range_int_idx {
             None => {
-                self.range_int_idx = match direction {
-                    Direction::Forward => Some(*range.start()),
-                    Direction::Backward => Some(*range.end()),
-                };
+                self.range_int_idx = Some(*range.start());
                 self.next()
             },
             Some(value) =>{
@@ -237,7 +234,7 @@ impl Iterator for RangeIter
                     Direction::Backward => {
                         let next = value.checked_sub(1);
 
-                        if value == *range.start() || next.is_none() {
+                        if value == *range.end() || next.is_none() {
                             self.range_int_idx = None;
                             self.range_ext_idx += 1;
                         } else {
