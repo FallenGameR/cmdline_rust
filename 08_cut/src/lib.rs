@@ -114,8 +114,8 @@ pub fn get_args() -> Result<Config> {
     })
 }
 
-fn parse_ranges(range: &str) -> Result<Vec<RangeInclusive<usize>>> {
-    range.split(',').map(|x| parse_range(x.trim())).collect()
+fn parse_ranges(ranges: &str) -> Result<Vec<RangeInclusive<usize>>> {
+    ranges.split(',').map(|x| parse_range(x.trim())).collect()
 }
 
 fn parse_range(range: &str) -> Result<RangeInclusive<usize>> {
@@ -184,6 +184,8 @@ fn extract_fields(line: &str, delimeter: char, ranges: &[RangeInclusive<usize>])
 
     let record = reader.records().next().expect("No fields found")?;
     let fields = extract_fields_internal(&record, ranges);
+
+    // Could use csv writer here for escaping of space-separated fields
     Ok(fields.join(&delimeter.to_string()))
 }
 
