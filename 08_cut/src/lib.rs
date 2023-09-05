@@ -183,18 +183,21 @@ fn extract_fields_internal(record: &StringRecord, ranges: &[RangeInclusive<usize
         .collect()
 }
 
+struct RangeIndex {
+    ext: usize,
+    int: Option<usize>,
+}
+
 struct RangeIter<'a> {
     ranges: &'a [RangeInclusive<usize>],
-    range_ext_idx: usize,
-    range_int_idx: Option<usize>,
+    index: RangeIndex,
 }
 
 impl<'a> RangeIter<'a> {
     fn new(ranges: &'a [RangeInclusive<usize>]) -> Self {
         Self {
-            ranges: ranges,
-            range_ext_idx: 0,
-            range_int_idx: None,
+            ranges,
+            index: RangeIndex { ext: 0, int: None },
         }
     }
 }
@@ -203,12 +206,12 @@ impl<'a> Iterator for RangeIter<'a> {
     type Item = usize;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let range = self.ranges.get(self.range_ext_idx)?;
+        let range = self.ranges.get(self.index.ext)?;
 
-        match self.range_int_idx {
+        match self.index.int {
             None => {
                 // Init the internal index
-                self.range_int_idx = Some(*range.start());
+                self.index.int = Some(*range.start());
                 self.next()
             }
             Some(value) => {
@@ -221,10 +224,9 @@ impl<'a> Iterator for RangeIter<'a> {
 
                 // Check if we need to move to anther range
                 if value == *range.end() || next.is_none() {
-                    self.range_int_idx = None;
-                    self.range_ext_idx += 1;
+                    self.index = RangeIndex { ext: self.index.ext + 1, int: None };
                 } else {
-                    self.range_int_idx = next;
+                    self.index.int = next;
                 }
 
                 Some(value)
