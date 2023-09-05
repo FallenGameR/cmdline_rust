@@ -183,28 +183,23 @@ fn extract_fields_internal(record: &StringRecord, ranges: &[RangeInclusive<usize
         .collect()
 }
 
-enum Direction {
-    Forward,
-    Backward,
-}
-
-struct RangeIter {
-    ranges: Vec<RangeInclusive<usize>>,
+struct RangeIter<'a> {
+    ranges: &'a [RangeInclusive<usize>],
     range_ext_idx: usize,
     range_int_idx: Option<usize>,
 }
 
-impl RangeIter {
-    fn new(ranges: &[RangeInclusive<usize>]) -> Self {
+impl<'a> RangeIter<'a> {
+    fn new(ranges: &'a [RangeInclusive<usize>]) -> Self {
         Self {
-            ranges: ranges.to_vec(),
+            ranges: ranges,
             range_ext_idx: 0,
             range_int_idx: None,
         }
     }
 }
 
-impl Iterator for RangeIter {
+impl<'a> Iterator for RangeIter<'a> {
     type Item = usize;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -238,10 +233,12 @@ impl Iterator for RangeIter {
     }
 }
 
-fn ranges_iter(ranges: &[RangeInclusive<usize>]) -> Box<dyn Iterator<Item = usize>> {
-    return Box::new(RangeIter::new(ranges));
+fn ranges_iter(ranges: &[RangeInclusive<usize>]) -> RangeIter {
+    RangeIter::new(ranges)
+}
 
-    /*
+/*
+fn ranges_iter(ranges: &[RangeInclusive<usize>]) -> Box<dyn Iterator<Item = usize>> {
     let mut indexes = Vec::<usize>::new();
 
     for range in ranges {
@@ -258,8 +255,8 @@ fn ranges_iter(ranges: &[RangeInclusive<usize>]) -> Box<dyn Iterator<Item = usiz
     }
 
     Box::new(indexes.into_iter())
-    */
 }
+*/
 
 fn open(path: &str) -> Result<Box<dyn BufRead>> {
     match path {
