@@ -6,7 +6,7 @@ use sys_info::os_type;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
-const PRG: &str = "grepr";
+const PRG: &str = "grep";
 const BUSTLE: &str = "tests/inputs/bustle.txt";
 const EMPTY: &str = "tests/inputs/empty.txt";
 const FOX: &str = "tests/inputs/fox.txt";
