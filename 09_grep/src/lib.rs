@@ -7,8 +7,9 @@ pub struct Config {
     pattern: String,
     files: Vec<String>,
     recurse: bool,
+    insensitive: bool,
     count: bool,
-    invert: bool,
+    invert_match: bool,
 }
 
 pub fn run(config: Config) -> Result<()> {
@@ -42,8 +43,9 @@ pub fn get_args() -> Result<Config> {
                 .default_value("."),
             arg!([FILES] ... "Files or folders to process, stdin is -").default_value("-"),
             arg!(-r --recurse "Recuresivelly descend into folders looking for files"),
+            arg!(-i --insensitive "Use case insensitive regex matching"),
             arg!(-c --count "Just count the matches, don't show them"),
-            arg!(-i --invert "Find lines that don't match the regular expression"),
+            arg!(-v --invert_match "Find lines that don't match the regular expression"),
         ])
         .get_matches();
 
@@ -57,8 +59,9 @@ pub fn get_args() -> Result<Config> {
             .expect("No file paths provided")
             .collect(),
         recurse: matches.get_flag("recurse"),
+        insensitive: matches.get_flag("insensitive"),
         count: matches.get_flag("count"),
-        invert: matches.get_flag("invert"),
+        invert_match: matches.get_flag("invert_match"),
     })
 }
 
