@@ -1,26 +1,19 @@
 use anyhow::{bail, Result};
 use clap::{arg, Command};
-use regex::RegexBuilder;
+use regex::{RegexBuilder, Regex};
 use std::io::{BufRead, BufReader};
 
 #[derive(Debug)]
 pub struct Config {
-    pattern: String,
+    pattern: Regex,
     files: Vec<String>,
     recurse: bool,
-    insensitive: bool,
     count: bool,
     invert_match: bool,
 }
 
 pub fn run(config: Config) -> Result<()> {
     dbg!(&config);
-
-    let pattern = RegexBuilder::new(&config.pattern)
-        .case_insensitive(config.insensitive)
-        .build()?;
-
-    dbg!(pattern.as_str());
 
     for path in &config.files {
         match open(path) {
@@ -55,17 +48,22 @@ pub fn get_args() -> Result<Config> {
         ])
         .get_matches();
 
+    // Construct regex
+    let pattern_text: String = matches
+        .remove_one("REGULAR_EXPRESSION")
+        .expect("No pattern provided");
+    let pattern = RegexBuilder::new(&pattern_text)
+        .case_insensitive(matches.get_flag("insensitive"))
+        .build()?;
+
     // Construct config
     Ok(Config {
-        pattern: matches
-            .remove_one("REGULAR_EXPRESSION")
-            .expect("No pattern provided"),
+        pattern,
         files: matches
             .remove_many("FILES")
             .expect("No file paths provided")
             .collect(),
         recurse: matches.get_flag("recurse"),
-        insensitive: matches.get_flag("insensitive"),
         count: matches.get_flag("count"),
         invert_match: matches.get_flag("invert_match"),
     })
