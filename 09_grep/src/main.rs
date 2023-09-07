@@ -1,4 +1,12 @@
 fn main() {
+    fn main() {
+        if let Err(error) = grep::get_args().and_then(grep::run) {
+            eprintln!("{error}");
+            std::process::exit(1);
+        }
+    }
+
+
     dbg!("Hello, world!"); // can return stuff
     // A Pin<P> ensures that the pointee of any pointer type P has a stable location in memory (self-referencing struct)
     // println!("Initializing an instance of {}", std::any::type_name::<T>());
