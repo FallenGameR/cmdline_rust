@@ -1,5 +1,6 @@
 use anyhow::{bail, Result};
 use clap::{arg, Command};
+use regex::RegexBuilder;
 use std::io::{BufRead, BufReader};
 
 #[derive(Debug)]
@@ -14,6 +15,12 @@ pub struct Config {
 
 pub fn run(config: Config) -> Result<()> {
     dbg!(&config);
+
+    let pattern = RegexBuilder::new(&config.pattern)
+        .case_insensitive(config.insensitive)
+        .build()?;
+
+    dbg!(pattern.as_str());
 
     for path in &config.files {
         match open(path) {
@@ -39,8 +46,7 @@ pub fn get_args() -> Result<Config> {
         .author("FallenGameR")
         .about("Finds text specified by regular expression in files")
         .args([
-            arg!(-e --expression <REGULAR_EXPRESSION> "Regular expression to use")
-                .default_value("."),
+            arg!(<REGULAR_EXPRESSION> "Regular expression to use"),
             arg!([FILES] ... "Files or folders to process, stdin is -").default_value("-"),
             arg!(-r --recurse "Recuresivelly descend into folders looking for files"),
             arg!(-i --insensitive "Use case insensitive regex matching"),
@@ -52,7 +58,7 @@ pub fn get_args() -> Result<Config> {
     // Construct config
     Ok(Config {
         pattern: matches
-            .remove_one("expression")
+            .remove_one("REGULAR_EXPRESSION")
             .expect("No pattern provided"),
         files: matches
             .remove_many("FILES")
