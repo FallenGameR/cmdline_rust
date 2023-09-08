@@ -1,7 +1,11 @@
-use anyhow::{bail, anyhow, Result};
+use anyhow::{anyhow, bail, Error, Result};
 use clap::{arg, Command};
+use predicates::path;
 use regex::{Regex, RegexBuilder};
-use std::io::{BufRead, BufReader};
+use std::{
+    fs::DirEntry,
+    io::{BufRead, BufReader},
+};
 use walkdir::WalkDir;
 
 #[derive(Debug)]
@@ -74,25 +78,20 @@ fn find_files(paths: &[String], recurse: bool) -> Vec<Result<String>> {
     let mut files: Vec<Result<String>> = Vec::new();
 
     for path in paths {
-        for entry in WalkDir::new(path) {
-            match entry {
+        for root in WalkDir::new(path) {
+            match root {
                 Err(error) => {
                     files.push(Err(error.into()));
                 }
-                Ok(entry) => {
-                    if entry.file_type().is_file() {
-                        files.push(Ok(entry.path().to_string_lossy().into()));
-                        continue;
-                    }
-
-                    if entry.file_type().is_dir() {
-                        if !recurse {
-                            let path = entry.path().display();
-                            files.push(Err(anyhow!("{path} is a directory")));
-                            break;
-                        }
-                    }
+                Ok(entry) if entry.file_type().is_file() => {
+                    files.push(Ok(entry.path().to_string_lossy().into()));
                 }
+                Ok(entry) if entry.file_type().is_dir() && !recurse => {
+                    let path = entry.path().display();
+                    files.push(Err(anyhow!("{path} is a directory")));
+                    break;
+                }
+                Ok(_) => (),
             }
         }
     }
