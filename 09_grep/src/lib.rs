@@ -105,6 +105,15 @@ fn find_files(paths: &[String], recurse: bool) -> Vec<Result<String>> {
     let mut files = Vec::new();
 
     for path in paths {
+        // Stdin is a correct path
+        if path == "-" {
+            files.push(Ok("-".to_string()));
+            continue;
+        }
+
+        // Recursivelly enumerate the file entry
+        // Walkdir would return the root as the first entry
+        // We'll handle recurse descent via a break if needed
         for root in WalkDir::new(path) {
             match root {
                 Err(error) => {
@@ -129,7 +138,11 @@ fn find_files(paths: &[String], recurse: bool) -> Vec<Result<String>> {
     files
 }
 
-fn find_lines(mut reader: impl BufRead, pattern: &Regex, invert_match: bool) -> Result<Vec<String>> {
+fn find_lines(
+    mut reader: impl BufRead,
+    pattern: &Regex,
+    invert_match: bool,
+) -> Result<Vec<String>> {
     let mut results = Vec::new();
     let mut line = String::new();
 
