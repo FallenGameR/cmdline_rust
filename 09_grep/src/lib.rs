@@ -37,10 +37,14 @@ pub fn run(config: Config) -> Result<()> {
 
         // Process matches
         for line in find_lines(reader, &config.pattern, config.invert_match)? {
+            if config.count {
+                todo!("Add aggregation")
+            }
+
             if files.len() > 1 {
-                println!("{}:{}", &path, line);
+                print!("{}:{}", &path, line);
             } else {
-                println!("{}", line);
+                print!("{}", line);
             }
         }
     }
@@ -120,16 +124,23 @@ fn find_files(paths: &[String], recurse: bool) -> Vec<Result<String>> {
     files
 }
 
-fn find_lines(reader: impl BufRead, pattern: &Regex, invert_match: bool) -> Result<Vec<String>> {
+fn find_lines(mut reader: impl BufRead, pattern: &Regex, invert_match: bool) -> Result<Vec<String>> {
     let mut results = Vec::new();
+    let mut line = String::new();
 
-    for line in reader.lines() {
-        let line = line?;
+    loop {
+        // Read line together with line endings
+        if reader.read_line(&mut line)? == 0 {
+            break;
+        }
 
         // It should either be a match or it is not a match and we are looking for not-matching lines
         if pattern.is_match(&line) ^ invert_match {
-            results.push(line);
+            results.push(line.clone());
         }
+
+        // Prepare for the next iteration
+        line.clear();
     }
 
     Ok(results)
