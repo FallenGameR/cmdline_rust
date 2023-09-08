@@ -86,11 +86,14 @@ fn find_files(paths: &[String], recurse: bool) -> Vec<Result<String>> {
                 Ok(entry) if entry.file_type().is_file() => {
                     files.push(Ok(entry.path().to_string_lossy().into()));
                 }
+                // If the entry is a directory and we're not recursing,
+                // add an error to the files vector and stop processing this path
                 Ok(entry) if entry.file_type().is_dir() && !recurse => {
                     let path = entry.path().display();
                     files.push(Err(anyhow!("{path} is a directory")));
                     break;
                 }
+                // If the entry is anything else (e.g., a symbolic link), ignore it
                 Ok(_) => (),
             }
         }
@@ -105,6 +108,7 @@ fn find_lines(reader: impl BufRead, pattern: &Regex, invert_match: bool) -> Resu
     for line in reader.lines() {
         let line = line?;
 
+        // It should either be a match or it is not a match and we are looking for not-matching lines
         if pattern.is_match(&line) ^ invert_match {
             results.push(line);
         }
