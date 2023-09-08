@@ -16,6 +16,14 @@ pub struct Config {
 pub fn run(config: Config) -> Result<()> {
     let files = find_files(&config.files, config.recurse);
 
+    let output = |path: &str, value: &str| {
+        if files.len() > 1 {
+            print!("{path}:{value}");
+        } else {
+            print!("{value}");
+        }
+    };
+
     for path in &files {
         // Print per-file error without terminating the program
         let path = match path {
@@ -38,19 +46,9 @@ pub fn run(config: Config) -> Result<()> {
         // Process matches
         let lines = find_lines(reader, &config.pattern, config.invert_match)?;
         if config.count {
-            if files.len() > 1 {
-                println!("{}:{}", &path, lines.len());
-            } else {
-                println!("{}", lines.len());
-            }
+            output(path, &format!("{}\n", lines.len()));
         } else {
-            for line in lines {
-                if files.len() > 1 {
-                    print!("{}:{}", &path, line);
-                } else {
-                    print!("{line}");
-                }
-            }
+            lines.into_iter().for_each(|line| output(path, &line));
         };
     }
 
