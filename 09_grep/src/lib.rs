@@ -107,13 +107,18 @@ fn find_files(paths: &[String], recurse: bool) -> Vec<Result<String>> {
     for path in paths {
         // Stdin is a correct path
         if path == "-" {
-            files.push(Ok("-".to_string()));
+            files.push(Ok("-".into()));
             continue;
         }
 
-        // Recursivelly enumerate the file entry
-        // Walkdir would return the root as the first entry
-        // We'll handle recurse descent via a break if needed
+        // Skip directories if we're not recursing
+        if std::fs::metadata(path).is_ok_and(|m| m.is_dir()) && !recurse {
+            files.push(Err(anyhow!("{path} is a directory")));
+            continue;
+        }
+
+        // Walk the file path - if it is file, just return it,
+        // if it is a folder we can safelly recurse inside of it
         for root in WalkDir::new(path) {
             match root {
                 // Store the errors to handle them upstream
@@ -124,13 +129,6 @@ fn find_files(paths: &[String], recurse: bool) -> Vec<Result<String>> {
                 // Found a file path to process
                 Ok(entry) if entry.file_type().is_file() => {
                     files.push(Ok(entry.path().to_string_lossy().into()));
-                }
-                // If the entry is a directory and we're not recursing,
-                // add an error to the files vector and stop processing this path
-                Ok(entry) if entry.file_type().is_dir() && !recurse => {
-                    let path = entry.path().display();
-                    files.push(Err(anyhow!("{path} is a directory")));
-                    break;
                 }
                 // If the entry is anything else (e.g. a directory that we need
                 // to recursivelly descend into or a symbolic link),
