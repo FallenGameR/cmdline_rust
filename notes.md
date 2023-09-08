@@ -51,6 +51,5 @@ let Ok(count) = u64::from_str(count_str) else {
 cargo build --timings
 
 # Auto fix non-idiomatic errors
-cargo clippy --fix -- --warn clippy::pedantic --allow clippy::missing-errors-doc
 cargo clippy --fix -- --warn clippy::pedantic --allow clippy::missing-errors-doc --allow clippy::missing-panics-doc --allow clippy::needless-pass-by-value 
 ```
