@@ -20,14 +20,14 @@ pub fn run(config: Config) -> Result<()> {
         // Print per-file error without terminating the program
         let path = match path {
             Err(error) => {
-                eprintln!("{}", error);
+                eprintln!("{error}");
                 continue;
             }
             Ok(path) => path,
         };
 
         // Open reader to the file
-        let reader = match open(&path) {
+        let reader = match open(path) {
             Err(error) => {
                 eprintln!("Can't open file '{}', error {}", &path, error);
                 continue;
@@ -48,7 +48,7 @@ pub fn run(config: Config) -> Result<()> {
                 if files.len() > 1 {
                     print!("{}:{}", &path, line);
                 } else {
-                    print!("{}", line);
+                    print!("{line}");
                 }
             }
         };
@@ -201,7 +201,7 @@ mod tests {
         let res = find_files(&["./tests/inputs".to_string()], true);
         let mut files: Vec<String> = res
             .iter()
-            .map(|r| r.as_ref().unwrap().replace("\\", "/"))
+            .map(|r| r.as_ref().unwrap().replace('\\', "/"))
             .collect();
         files.sort();
         assert_eq!(files.len(), 4);
