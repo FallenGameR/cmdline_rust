@@ -75,7 +75,7 @@ pub fn get_args() -> Result<Config> {
 }
 
 fn find_files(paths: &[String], recurse: bool) -> Vec<Result<String>> {
-    let mut files: Vec<Result<String>> = Vec::new();
+    let mut files = Vec::new();
 
     for path in paths {
         for root in WalkDir::new(path) {
@@ -100,7 +100,17 @@ fn find_files(paths: &[String], recurse: bool) -> Vec<Result<String>> {
 }
 
 fn find_lines(reader: impl BufRead, pattern: &Regex, invert_match: bool) -> Result<Vec<String>> {
-    todo!("Find matching lines")
+    let mut results = Vec::new();
+
+    for line in reader.lines() {
+        let line = line?;
+
+        if pattern.is_match(&line) ^ invert_match {
+            results.push(line);
+        }
+    }
+
+    Ok(results)
 }
 
 fn process_file(path: &str, reader: Box<dyn BufRead>, _: &Config) -> Result<()> {
