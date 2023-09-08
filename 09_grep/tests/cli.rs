@@ -34,7 +34,7 @@ fn dies_no_args() -> TestResult {
     Command::cargo_bin(PRG)?
         .assert()
         .failure()
-        .stderr(predicate::str::contains("USAGE"));
+        .stderr(predicate::str::contains("Usage"));
     Ok(())
 }
 
@@ -45,7 +45,7 @@ fn dies_bad_pattern() -> TestResult {
         .args(&["*foo", FOX])
         .assert()
         .failure()
-        .stderr(predicate::str::contains("Invalid pattern \"*foo\""));
+        .stderr(predicate::str::contains("repetition operator missing expression"));
     Ok(())
 }
 

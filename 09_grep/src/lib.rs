@@ -14,20 +14,34 @@ pub struct Config {
 }
 
 pub fn run(config: Config) -> Result<()> {
-    for path in find_files(&config.files, config.recurse) {
+    let files = find_files(&config.files, config.recurse);
+
+    for path in &files {
         // Print per-file error without terminating the program
-        let Ok(path) = path else {
-            eprintln!("{}", path.unwrap_err());
-            continue;
+        let path = match path {
+            Err(error) => {
+                eprintln!("{}", error);
+                continue;
+            }
+            Ok(path) => path,
         };
 
         // Open reader to the file
-        match open(&path) {
-            Err(error) => eprintln!("Can't open file '{}', error {}", &path, error),
-            Ok(reader) => {
-                let lines = find_lines(reader, &config.pattern, config.invert_match)?;
-                lines.into_iter().for_each(|l| println!("{}", l));
-            },
+        let reader = match open(&path) {
+            Err(error) => {
+                eprintln!("Can't open file '{}', error {}", &path, error);
+                continue;
+            }
+            Ok(reader) => reader,
+        };
+
+        // Process matches
+        for line in find_lines(reader, &config.pattern, config.invert_match)? {
+            if files.len() > 1 {
+                println!("{}:{}", &path, line);
+            } else {
+                println!("{}", line);
+            }
         }
     }
 
