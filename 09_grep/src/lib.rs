@@ -1,4 +1,4 @@
-use anyhow::{bail, Result};
+use anyhow::{bail, anyhow, Result};
 use clap::{arg, Command};
 use regex::{Regex, RegexBuilder};
 use std::io::{BufRead, BufReader};
@@ -87,6 +87,8 @@ fn find_files(paths: &[String], recurse: bool) -> Vec<Result<String>> {
 
                     if entry.file_type().is_dir() {
                         if !recurse {
+                            let path = entry.path().display();
+                            files.push(Err(anyhow!("{path} is a directory")));
                             break;
                         }
                     }
