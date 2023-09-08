@@ -136,6 +136,16 @@ fn find_files(paths: &[String], recurse: bool) -> Vec<Result<String>> {
         }
     }
 
+    /*
+    // In case we didn't care to propogate errors
+    let files_in_all_folders: Vec<Result<String>> = WalkDir::new(path)
+        .into_iter()
+        .flatten()
+        .filter(|e| e.file_type().is_file())
+        .map(|e| Ok(e.path().to_string_lossy().into()))
+        .collect();
+    */
+
     files
 }
 
