@@ -1,7 +1,8 @@
 use anyhow::{bail, Result};
 use clap::{arg, Command};
-use regex::{RegexBuilder, Regex};
+use regex::{Regex, RegexBuilder};
 use std::io::{BufRead, BufReader};
+use walkdir::WalkDir;
 
 #[derive(Debug)]
 pub struct Config {
@@ -69,23 +70,35 @@ pub fn get_args() -> Result<Config> {
     })
 }
 
-fn find_files(path: &[String], recurse: bool) -> Vec<Result<String>> {
-    let mut files = Vec::new();
+fn find_files(paths: &[String], recurse: bool) -> Vec<Result<String>> {
+    let mut files: Vec<Result<String>> = Vec::new();
 
-    if recurse {
-        todo!("Recursively find files")
-    } else {
-        files.push(Ok("some file".into()));
+    for path in paths {
+        for entry in WalkDir::new(path) {
+            match entry {
+                Err(error) => {
+                    files.push(Err(error.into()));
+                }
+                Ok(entry) => {
+                    if entry.file_type().is_file() {
+                        files.push(Ok(entry.path().to_string_lossy().into()));
+                        continue;
+                    }
+
+                    if entry.file_type().is_dir() {
+                        if !recurse {
+                            break;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     files
 }
 
-fn find_lines(
-    reader: impl BufRead,
-    pattern: &Regex,
-    invert_match: bool,
-) -> Result<Vec<String>> {
+fn find_lines(reader: impl BufRead, pattern: &Regex, invert_match: bool) -> Result<Vec<String>> {
     todo!("Find matching lines")
 }
 
@@ -113,8 +126,7 @@ mod tests {
     #[test]
     fn test_find_files() {
         // Verify that the function finds a file known to exist
-        let files =
-            find_files(&["./tests/inputs/fox.txt".to_string()], false);
+        let files = find_files(&["./tests/inputs/fox.txt".to_string()], false);
         assert_eq!(files.len(), 1);
         assert_eq!(files[0].as_ref().unwrap(), "./tests/inputs/fox.txt");
 
