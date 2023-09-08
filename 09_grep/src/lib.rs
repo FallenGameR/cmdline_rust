@@ -1,11 +1,7 @@
-use anyhow::{anyhow, bail, Error, Result};
+use anyhow::{anyhow, Result};
 use clap::{arg, Command};
-use predicates::path;
 use regex::{Regex, RegexBuilder};
-use std::{
-    fs::DirEntry,
-    io::{BufRead, BufReader},
-};
+use std::io::{BufRead, BufReader};
 use walkdir::WalkDir;
 
 #[derive(Debug)]
@@ -18,12 +14,20 @@ pub struct Config {
 }
 
 pub fn run(config: Config) -> Result<()> {
-    dbg!(&config);
+    for path in find_files(&config.files, config.recurse) {
+        // Print per-file error without terminating the program
+        let Ok(path) = path else {
+            eprintln!("{}", path.unwrap_err());
+            continue;
+        };
 
-    for path in &config.files {
-        match open(path) {
+        // Open reader to the file
+        match open(&path) {
             Err(error) => eprintln!("Can't open file '{}', error {}", &path, error),
-            Ok(reader) => process_file(path, reader, &config)?,
+            Ok(reader) => {
+                let lines = find_lines(reader, &config.pattern, config.invert_match)?;
+                lines.into_iter().for_each(|l| println!("{}", l));
+            },
         }
     }
 
@@ -115,19 +119,6 @@ fn find_lines(reader: impl BufRead, pattern: &Regex, invert_match: bool) -> Resu
     }
 
     Ok(results)
-}
-
-fn process_file(path: &str, reader: Box<dyn BufRead>, _: &Config) -> Result<()> {
-    for line in reader.lines() {
-        match line {
-            Err(error) => eprintln!("Can't read line from file '{path}', error {error}"),
-            Ok(_) => {
-                todo!("Process the line")
-            }
-        }
-    }
-
-    Ok(())
 }
 
 // --------------------------------------------------
