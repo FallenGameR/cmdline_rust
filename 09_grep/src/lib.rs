@@ -165,11 +165,12 @@ fn find_lines(
 
         // It should either be a match or it is not a match and we are looking for not-matching lines
         if pattern.is_match(&line) ^ invert_match {
-            results.push(line.clone());
+            // Avoiding clone via take that swaps line contents with an empty string
+            results.push(std::mem::take(&mut line));
+        } else {
+            // If we didn't use the line we need to clean it up for the next iteration
+            line.clear();
         }
-
-        // Prepare for the next iteration
-        line.clear();
     }
 
     Ok(results)
