@@ -74,7 +74,7 @@ pub fn get_args() -> Result<Config> {
             arg!(<REGULAR_EXPRESSION> "Regular expression to use"),
             arg!([FILES] ... "Files or folders to process, stdin is -").default_value("-"),
             arg!(-i --insensitive "Use case insensitive regex matching"),
-            arg!(-r --recurse "Recuresivelly descend into folders looking for files"),
+            arg!(-r --recursive "Recuresivelly descend into folders looking for files"),
             arg!(-c --count "Just count the matches, don't show them"),
             arg!(-v --invert_match "Find lines that don't match the regular expression"),
         ])
@@ -95,7 +95,7 @@ pub fn get_args() -> Result<Config> {
             .remove_many("FILES")
             .expect("No file paths provided")
             .collect(),
-        recurse: matches.get_flag("recurse"),
+        recurse: matches.get_flag("recursive"),
         count: matches.get_flag("count"),
         invert_match: matches.get_flag("invert_match"),
     })
