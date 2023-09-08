@@ -36,17 +36,22 @@ pub fn run(config: Config) -> Result<()> {
         };
 
         // Process matches
-        for line in find_lines(reader, &config.pattern, config.invert_match)? {
-            if config.count {
-                todo!("Add aggregation")
-            }
-
+        let lines = find_lines(reader, &config.pattern, config.invert_match)?;
+        if config.count {
             if files.len() > 1 {
-                print!("{}:{}", &path, line);
+                println!("{}:{}", &path, lines.len());
             } else {
-                print!("{}", line);
+                println!("{}", lines.len());
             }
-        }
+        } else {
+            for line in lines {
+                if files.len() > 1 {
+                    print!("{}:{}", &path, line);
+                } else {
+                    print!("{}", line);
+                }
+            }
+        };
     }
 
     Ok(())

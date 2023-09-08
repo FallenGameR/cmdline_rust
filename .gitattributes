@@ -1,11 +1,1 @@
-*.capitalized -text
-*.count -text
-*.foo -text
-*.insensistive -text
-*.insensitive -text
-*.lowercase -text
-*.out -text
-*.recursive -text
-*.stdin -text
-*.txt -text
-*.windows -text
+**/expected/* binary
