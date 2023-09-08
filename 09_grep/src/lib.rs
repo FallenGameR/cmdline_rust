@@ -14,8 +14,10 @@ pub struct Config {
 }
 
 pub fn run(config: Config) -> Result<()> {
+    // Files to process
     let files = find_files(&config.files, config.recurse);
 
+    // Output should be prepended with file name in case we have many files
     let output = |path: &str, value: &str| {
         if files.len() > 1 {
             print!("{path}:{value}");
@@ -24,6 +26,7 @@ pub fn run(config: Config) -> Result<()> {
         }
     };
 
+    // Process each file
     for path in &files {
         // Print per-file error without terminating the program
         let path = match path {
@@ -52,6 +55,7 @@ pub fn run(config: Config) -> Result<()> {
         };
     }
 
+    // Made it to the end without terminating errors
     Ok(())
 }
 
