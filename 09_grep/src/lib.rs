@@ -116,9 +116,12 @@ fn find_files(paths: &[String], recurse: bool) -> Vec<Result<String>> {
         // We'll handle recurse descent via a break if needed
         for root in WalkDir::new(path) {
             match root {
+                // Store the errors to handle them upstream
+                // without program termination
                 Err(error) => {
                     files.push(Err(error.into()));
                 }
+                // Found a file path to process
                 Ok(entry) if entry.file_type().is_file() => {
                     files.push(Ok(entry.path().to_string_lossy().into()));
                 }
@@ -129,7 +132,9 @@ fn find_files(paths: &[String], recurse: bool) -> Vec<Result<String>> {
                     files.push(Err(anyhow!("{path} is a directory")));
                     break;
                 }
-                // If the entry is anything else (e.g., a symbolic link), ignore it
+                // If the entry is anything else (e.g. a directory that we need
+                // to recursivelly descend into or a symbolic link),
+                // don't modify the output files vector
                 Ok(_) => (),
             }
         }
