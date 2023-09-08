@@ -29,21 +29,18 @@ pub fn run(config: Config) -> Result<()> {
     // Process each file
     for path in &files {
         // Print per-file error without terminating the program
-        let path = match path {
-            Err(error) => {
-                eprintln!("{error}");
-                continue;
-            }
-            Ok(path) => path,
+        let Ok(path) = path else {
+            eprintln!("{}", path.as_ref().unwrap_err());
+            continue;
         };
 
         // Open reader to the file
         let reader = match open(path) {
+            Ok(reader) => reader,
             Err(error) => {
                 eprintln!("Can't open file '{}', error {}", &path, error);
                 continue;
             }
-            Ok(reader) => reader,
         };
 
         // Process matches
