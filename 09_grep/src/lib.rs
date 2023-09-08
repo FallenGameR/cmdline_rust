@@ -118,11 +118,10 @@ fn find_files(paths: &[String], recurse: bool) -> Vec<Result<String>> {
         }
 
         // Walk the file path - if it is file, just return it,
-        // if it is a folder we can safelly recurse inside of it
+        // if it is a folder we can safelly recurse into it
         for root in WalkDir::new(path) {
             match root {
-                // Store the errors to handle them upstream
-                // without program termination
+                // Store the errors to handle them upstream without program termination
                 Err(error) => {
                     files.push(Err(error.into()));
                 }
@@ -130,9 +129,8 @@ fn find_files(paths: &[String], recurse: bool) -> Vec<Result<String>> {
                 Ok(entry) if entry.file_type().is_file() => {
                     files.push(Ok(entry.path().to_string_lossy().into()));
                 }
-                // If the entry is anything else (e.g. a directory that we need
-                // to recursivelly descend into or a symbolic link),
-                // don't modify the output files vector
+                // Don't modify the output files vector if the entry is anything else
+                // (e.g. a directory that we didn't enumerate yet or a symbolic link)
                 Ok(_) => (),
             }
         }
