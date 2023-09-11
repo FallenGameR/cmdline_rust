@@ -1,5 +1,5 @@
-use anyhow::{Result, bail};
-use clap::{arg, Command, Arg, ArgAction};
+use anyhow::{anyhow, bail, Result};
+use clap::{arg, Arg, ArgAction, Command};
 use std::io::{BufRead, BufReader};
 
 #[derive(Debug)]
@@ -63,7 +63,9 @@ pub fn run(config: Config) -> Result<()> {
 fn open(path: &str) -> Result<Box<dyn BufRead>> {
     match path {
         "-" => Ok(Box::new(BufReader::new(std::io::stdin()))),
-        _ => Ok(Box::new(BufReader::new(std::fs::File::open(path)?))),
+        _ => Ok(Box::new(BufReader::new(
+            std::fs::File::open(path).map_err(|e| anyhow!("{path}: {e}"))?,
+        ))),
     }
 }
 
@@ -89,15 +91,12 @@ pub fn get_args() -> Result<Config> {
                 .help("Don't print column3 (common lines in both files)")
                 .action(ArgAction::SetTrue),
             arg!(-i --insensitive "Perform case insensitive matching"),
-            arg!(-d --delimeter <DELIMETER> "Delimiter to use for columns")
-                .default_value("\t")
+            arg!(-d --delimeter <DELIMETER> "Delimiter to use for columns").default_value("\t"),
         ])
         .get_matches();
 
     // Check that we don't have both files set to stdin
-    let file1: String = matches
-        .remove_one("FILE1")
-        .expect("No first file provided");
+    let file1: String = matches.remove_one("FILE1").expect("No first file provided");
     let file2: String = matches
         .remove_one("FILE2")
         .expect("No second file provided");
