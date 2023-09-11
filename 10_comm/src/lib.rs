@@ -1,19 +1,22 @@
-use anyhow::{anyhow, Result};
-use clap::{arg, Command};
-use regex::{Regex, RegexBuilder};
+use anyhow::{Result, bail};
+use clap::{arg, Command, Arg, ArgAction};
 use std::io::{BufRead, BufReader};
-use walkdir::WalkDir;
 
 #[derive(Debug)]
 pub struct Config {
-    pattern: Regex,
-    files: Vec<String>,
-    recurse: bool,
-    count: bool,
-    invert_match: bool,
+    file1: String,
+    file2: String,
+    show_col1: bool,
+    show_col2: bool,
+    show_col3: bool,
+    case_insensitive: bool,
+    delimeter: String,
 }
 
 pub fn run(config: Config) -> Result<()> {
+    dbg!(config);
+
+    /*
     // Files to process
     let files = find_files(&config.files, config.recurse);
 
@@ -53,6 +56,7 @@ pub fn run(config: Config) -> Result<()> {
     }
 
     // Made it to the end without terminating errors
+    */
     Ok(())
 }
 
@@ -68,37 +72,58 @@ pub fn get_args() -> Result<Config> {
     let mut matches = Command::new("grep")
         .version("1.0")
         .author("FallenGameR")
-        .about("Finds text specified by regular expression in files")
+        .about("Finds common and unique lines in two sorted files")
         .args([
-            arg!(<REGULAR_EXPRESSION> "Regular expression to use"),
-            arg!([FILES] ... "Files or folders to process, stdin is -").default_value("-"),
-            arg!(-i --insensitive "Use case insensitive regex matching"),
-            arg!(-r --recursive "Recuresivelly descend into folders looking for files"),
-            arg!(-c --count "Just count the matches, don't show them"),
-            arg!(-v --invert_match "Find lines that don't match the regular expression"),
+            arg!(<FILE1> "First file to process, stdin is -"),
+            arg!(<FILE2> "Second file to process, stdin is -"),
+            Arg::new("column1")
+                .short('1')
+                .long("column1")
+                .help("Don't print column1 (unique lines from first file)")
+                .action(ArgAction::SetFalse),
+            Arg::new("column2")
+                .short('2')
+                .long("column2")
+                .help("Don't print column2 (unique lines from second file)")
+                .action(ArgAction::SetFalse),
+            Arg::new("column3")
+                .short('3')
+                .long("column3")
+                .help("Don't print column3 (common lines in both files)")
+                .action(ArgAction::SetFalse),
+            arg!(-i --insensitive "Perform case insensitive matching"),
+            arg!(-d --delimeter <DELIMETER> "Delimiter to use for columns")
+                .value_parser(clap::value_parser!(char))
+                .default_value("\t")
         ])
         .get_matches();
 
-    // Construct regex
-    let pattern_text: String = matches
-        .remove_one("REGULAR_EXPRESSION")
-        .expect("No pattern provided");
-    let pattern = RegexBuilder::new(&pattern_text)
-        .case_insensitive(matches.get_flag("insensitive"))
-        .build()?;
+    // Check that we don't have both files set to stdin
+    let file1: String = matches
+        .remove_one("FILE1")
+        .expect("No first file provided");
+    let file2: String = matches
+        .remove_one("FILE2")
+        .expect("No second file provided");
+    if file1 == "-" && file2 == "-" {
+        bail!("Both files can't be set to stdin");
+    }
 
     // Construct config
     Ok(Config {
-        pattern,
-        files: matches
-            .remove_many("FILES")
-            .expect("No file paths provided")
-            .collect(),
-        recurse: matches.get_flag("recursive"),
-        count: matches.get_flag("count"),
-        invert_match: matches.get_flag("invert_match"),
+        file1,
+        file2,
+        show_col1: !matches.get_flag("column1"),
+        show_col2: !matches.get_flag("column2"),
+        show_col3: !matches.get_flag("column3"),
+        case_insensitive: matches.get_flag("insensitive"),
+        delimeter: matches
+            .remove_one("delimeter")
+            .expect("No delimeter was provided"),
     })
 }
+
+/*
 
 fn find_files(paths: &[String], recurse: bool) -> Vec<Result<String>> {
     let mut files = Vec::new();
@@ -135,16 +160,6 @@ fn find_files(paths: &[String], recurse: bool) -> Vec<Result<String>> {
         }
     }
 
-    /*
-    // In case we didn't care to propogate errors
-    let files_in_all_folders: Vec<Result<String>> = WalkDir::new(path)
-        .into_iter()
-        .flatten()
-        .filter(|e| e.file_type().is_file())
-        .map(|e| Ok(e.path().to_string_lossy().into()))
-        .collect();
-    */
-
     files
 }
 
@@ -175,89 +190,4 @@ fn find_lines(
 
     Ok(results)
 }
-
-// --------------------------------------------------
-#[cfg(test)]
-mod tests {
-    use super::{find_files, find_lines};
-    use rand::{distributions::Alphanumeric, Rng};
-    use regex::{Regex, RegexBuilder};
-    use std::io::Cursor;
-
-    #[test]
-    fn test_find_files() {
-        // Verify that the function finds a file known to exist
-        let files = find_files(&["./tests/inputs/fox.txt".to_string()], false);
-        assert_eq!(files.len(), 1);
-        assert_eq!(files[0].as_ref().unwrap(), "./tests/inputs/fox.txt");
-
-        // The function should reject a directory without the recursive option
-        let files = find_files(&["./tests/inputs".to_string()], false);
-        assert_eq!(files.len(), 1);
-        if let Err(e) = &files[0] {
-            assert_eq!(e.to_string(), "./tests/inputs is a directory");
-        }
-
-        // Verify the function recurses to find four files in the directory
-        let res = find_files(&["./tests/inputs".to_string()], true);
-        let mut files: Vec<String> = res
-            .iter()
-            .map(|r| r.as_ref().unwrap().replace('\\', "/"))
-            .collect();
-        files.sort();
-        assert_eq!(files.len(), 4);
-        assert_eq!(
-            files,
-            vec![
-                "./tests/inputs/bustle.txt",
-                "./tests/inputs/empty.txt",
-                "./tests/inputs/fox.txt",
-                "./tests/inputs/nobody.txt",
-            ]
-        );
-
-        // Generate a random string to represent a nonexistent file
-        let bad: String = rand::thread_rng()
-            .sample_iter(&Alphanumeric)
-            .take(7)
-            .map(char::from)
-            .collect();
-
-        // Verify that the function returns the bad file as an error
-        let files = find_files(&[bad], false);
-        assert_eq!(files.len(), 1);
-        assert!(files[0].is_err());
-    }
-
-    #[test]
-    fn test_find_lines() {
-        let text = b"Lorem\nIpsum\r\nDOLOR";
-
-        // The pattern _or_ should match the one line, "Lorem"
-        let re1 = Regex::new("or").unwrap();
-        let matches = find_lines(Cursor::new(&text), &re1, false);
-        assert!(matches.is_ok());
-        assert_eq!(matches.unwrap().len(), 1);
-
-        // When inverted, the function should match the other two lines
-        let matches = find_lines(Cursor::new(&text), &re1, true);
-        assert!(matches.is_ok());
-        assert_eq!(matches.unwrap().len(), 2);
-
-        // This regex will be case-insensitive
-        let re2 = RegexBuilder::new("or")
-            .case_insensitive(true)
-            .build()
-            .unwrap();
-
-        // The two lines "Lorem" and "DOLOR" should match
-        let matches = find_lines(Cursor::new(&text), &re2, false);
-        assert!(matches.is_ok());
-        assert_eq!(matches.unwrap().len(), 2);
-
-        // When inverted, the one remaining line should match
-        let matches = find_lines(Cursor::new(&text), &re2, true);
-        assert!(matches.is_ok());
-        assert_eq!(matches.unwrap().len(), 1);
-    }
-}
+*/
