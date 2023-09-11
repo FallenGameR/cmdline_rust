@@ -101,7 +101,7 @@ pub fn get_args() -> Result<Config> {
         .remove_one("FILE2")
         .expect("No second file provided");
     if file1 == "-" && file2 == "-" {
-        bail!("Both files can't be set to stdin");
+        bail!("Both input files cannot be STDIN (\"-\")");
     }
 
     // Construct config
