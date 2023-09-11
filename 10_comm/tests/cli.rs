@@ -3,7 +3,7 @@ use predicates::prelude::*;
 use rand::{distributions::Alphanumeric, Rng};
 use std::fs;
 
-const PRG: &str = "commr";
+const PRG: &str = "comm";
 const EMPTY: &str = "tests/inputs/empty.txt";
 const FILE1: &str = "tests/inputs/file1.txt";
 const FILE2: &str = "tests/inputs/file2.txt";
@@ -17,7 +17,7 @@ fn dies_no_args() -> TestResult {
     Command::cargo_bin(PRG)?
         .assert()
         .failure()
-        .stderr(predicate::str::contains("USAGE"));
+        .stderr(predicate::str::contains("Usage"));
     Ok(())
 }
 
