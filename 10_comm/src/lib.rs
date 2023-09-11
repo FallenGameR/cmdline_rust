@@ -80,20 +80,19 @@ pub fn get_args() -> Result<Config> {
                 .short('1')
                 .long("column1")
                 .help("Don't print column1 (unique lines from first file)")
-                .action(ArgAction::SetFalse),
+                .action(ArgAction::SetTrue),
             Arg::new("column2")
                 .short('2')
                 .long("column2")
                 .help("Don't print column2 (unique lines from second file)")
-                .action(ArgAction::SetFalse),
+                .action(ArgAction::SetTrue),
             Arg::new("column3")
                 .short('3')
                 .long("column3")
                 .help("Don't print column3 (common lines in both files)")
-                .action(ArgAction::SetFalse),
+                .action(ArgAction::SetTrue),
             arg!(-i --insensitive "Perform case insensitive matching"),
             arg!(-d --delimeter <DELIMETER> "Delimiter to use for columns")
-                .value_parser(clap::value_parser!(char))
                 .default_value("\t")
         ])
         .get_matches();
