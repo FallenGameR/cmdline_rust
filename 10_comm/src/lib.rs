@@ -14,7 +14,12 @@ pub struct Config {
 }
 
 pub fn run(config: Config) -> Result<()> {
-    dbg!(config);
+    dbg!(&config);
+
+    // Open input files
+    let file1 = open(&config.file1)?;
+    let file2 = open(&config.file2)?;
+    print!("Opened {} and {}", &config.file1, &config.file2);
 
     /*
     // Files to process
