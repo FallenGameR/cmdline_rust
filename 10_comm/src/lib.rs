@@ -78,17 +78,14 @@ pub fn get_args() -> Result<Config> {
             arg!(<FILE2> "Second file to process, stdin is -"),
             Arg::new("column1")
                 .short('1')
-                .long("column1")
                 .help("Don't print column1 (unique lines from first file)")
                 .action(ArgAction::SetTrue),
             Arg::new("column2")
                 .short('2')
-                .long("column2")
                 .help("Don't print column2 (unique lines from second file)")
                 .action(ArgAction::SetTrue),
             Arg::new("column3")
                 .short('3')
-                .long("column3")
                 .help("Don't print column3 (common lines in both files)")
                 .action(ArgAction::SetTrue),
             arg!(-i --insensitive "Perform case insensitive matching"),
