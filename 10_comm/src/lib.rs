@@ -1,6 +1,6 @@
 use anyhow::{anyhow, bail, Result};
 use clap::{arg, Arg, ArgAction, Command};
-use std::cmp::Ordering::*;
+use std::cmp::Ordering::{Equal, Greater, Less};
 use std::io::{BufRead, BufReader};
 
 #[derive(Debug)]
@@ -26,8 +26,8 @@ fn output(config: &Config, column: u8, value: &str) {
     // How many delimeters do we need to print before the value
     let number_of_delimeters = match column {
         1 => 0,
-        2 => config.show_col1 as u8,
-        3 => config.show_col1 as u8 + config.show_col2 as u8,
+        2 => u8::from(config.show_col1),
+        3 => u8::from(config.show_col1) + u8::from(config.show_col2),
         _ => panic!("Invalid column number"),
     };
 
