@@ -1,6 +1,8 @@
 use anyhow::{anyhow, bail, Result};
 use clap::{arg, Arg, ArgAction, Command};
+use std::borrow::Cow;
 use std::io::{BufRead, BufReader};
+use std::cmp::Ordering::*;
 
 #[derive(Debug)]
 pub struct Config {
@@ -18,95 +20,77 @@ pub fn run(config: Config) -> Result<()> {
     let mut file1 = open(&config.file1)?.lines();
     let mut file2 = open(&config.file2)?.lines();
 
-    let report = |column: u8, value: String| match column {
-        1 => {
-            if config.show_col1 {
-                print!("{}\n", value)
-            }
+    let mut a = file1.next().transpose()?;
+    let mut b = file2.next().transpose()?;
+
+    loop {
+        // Exit condition
+        if a.is_none() && b.is_none() {
+            break;
         }
-        2 => {
-            if config.show_col2 {
-                print!("{}\n", value)
-            }
+
+        // Trivial cases
+        if a.is_none() {
+            output(&config, 2, b.as_deref().expect("Can't be None"));
+            b = file2.next().transpose()?;
+            continue;
         }
-        3 => {
-            if config.show_col3 {
-                print!("{}\n", value)
-            }
+
+        if b.is_none() {
+            output(&config, 1, a.as_deref().expect("Can't be None"));
+            a = file1.next().transpose()?;
+            continue;
         }
+
+        // Comparison
+        let mut a_text = Cow::Borrowed(a.as_deref().expect("Can't be None"));
+        let mut b_text = Cow::Borrowed(b.as_deref().expect("Can't be None"));
+
+        if config.case_insensitive {
+            a_text = a_text.to_lowercase().into();
+            b_text = b_text.to_lowercase().into();
+        }
+
+        match a_text.cmp(&b_text) {
+            Equal => {
+                output(&config, 3, a_text.as_ref());
+                a = file1.next().transpose()?;
+                b = file2.next().transpose()?;
+            },
+            Less => {
+                output(&config, 1, a_text.as_ref());
+                a = file1.next().transpose()?;
+            },
+            Greater => {
+                output(&config, 2, b_text.as_ref());
+                b = file2.next().transpose()?;
+            },
+        }
+    }
+
+    Ok(())
+}
+
+fn output(config: &Config, column: u8, value: &str) {
+    // Check if we even need to print this column
+    match column {
+        1 if !config.show_col1 => return,
+        2 if !config.show_col2 => return,
+        3 if !config.show_col3 => return,
+        _ => (),
+    }
+
+    // How many delimeters do we need to print before the value
+    let number_of_delimeters = match column {
+        1 => 0,
+        2 => config.show_col1 as u8,
+        3 => config.show_col1 as u8 + config.show_col2 as u8,
         _ => panic!("Invalid column number"),
     };
 
-    loop {
-        // Read lines
-        let mut current1 = file1.next().transpose()?;
-        let mut current2 = file2.next().transpose()?;
-
-        // Exhaust other file if it's counterpart is exhausted
-        let mut current1 = match current1 {
-            Some(value) => Some(value),
-            None => {
-                while let Some(value) = current2 {
-                    report(2, value);
-                    current2 = file2.next().transpose()?;
-                }
-                break
-            }
-        };
-        let mut current2 = match current2 {
-            Some(value) => Some(value),
-            None => {
-                while let Some(value) = current1 {
-                    report(1, value);
-                    current1 = file1.next().transpose()?;
-                }
-                break
-            }
-        };
-    }
-
-    /*
-    // Files to process
-    let files = find_files(&config.files, config.recurse);
-
-    // Output should be prepended with file name in case we have many files
-    let output = |path: &str, value: &str| {
-        if files.len() > 1 {
-            print!("{path}:{value}");
-        } else {
-            print!("{value}");
-        }
-    };
-
-    // Process each file
-    for path in &files {
-        // Print per-file error without terminating the program
-        let Ok(path) = path else {
-            eprintln!("{}", path.as_ref().unwrap_err());
-            continue;
-        };
-
-        // Open reader to the file
-        let reader = match open(path) {
-            Ok(reader) => reader,
-            Err(error) => {
-                eprintln!("Can't open file '{}', error {}", &path, error);
-                continue;
-            }
-        };
-
-        // Process matches
-        let lines = find_lines(reader, &config.pattern, config.invert_match)?;
-        if config.count {
-            output(path, &format!("{}\n", lines.len()));
-        } else {
-            lines.into_iter().for_each(|line| output(path, &line));
-        };
-    }
-
-    // Made it to the end without terminating errors
-    */
-    Ok(())
+    // Print value in the corresponding column
+    let delimeters = config.delimeter.repeat(number_of_delimeters as usize);
+    println!("{delimeters}{value}");
 }
 
 fn open(path: &str) -> Result<Box<dyn BufRead>> {
