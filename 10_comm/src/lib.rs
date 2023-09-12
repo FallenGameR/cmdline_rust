@@ -1,8 +1,8 @@
 use anyhow::{anyhow, bail, Result};
 use clap::{arg, Arg, ArgAction, Command};
 use std::borrow::Cow;
-use std::io::{BufRead, BufReader};
 use std::cmp::Ordering::*;
+use std::io::{BufRead, BufReader};
 
 #[derive(Debug)]
 pub struct Config {
@@ -16,9 +16,20 @@ pub struct Config {
 }
 
 pub fn run(config: Config) -> Result<()> {
+    // Case insensitivity
+    let casing = |line: std::result::Result<String, std::io::Error>| -> Result<String> {
+        line.map(|mut line| {
+            if config.case_insensitive {
+                line = line.to_ascii_lowercase();
+            }
+            line
+        })
+        .map_err(|e| e.into())
+    };
+
     // Open iterators files
-    let mut file1 = open(&config.file1)?.lines();
-    let mut file2 = open(&config.file2)?.lines();
+    let mut file1 = open(&config.file1)?.lines().map(casing);
+    let mut file2 = open(&config.file2)?.lines().map(casing);
 
     let mut a = file1.next().transpose()?;
     let mut b = file2.next().transpose()?;
@@ -43,28 +54,20 @@ pub fn run(config: Config) -> Result<()> {
         }
 
         // Comparison
-        let mut a_text = Cow::Borrowed(a.as_deref().expect("Can't be None"));
-        let mut b_text = Cow::Borrowed(b.as_deref().expect("Can't be None"));
-
-        if config.case_insensitive {
-            a_text = a_text.to_lowercase().into();
-            b_text = b_text.to_lowercase().into();
-        }
-
-        match a_text.cmp(&b_text) {
+        match a.cmp(&b) {
             Equal => {
-                output(&config, 3, a_text.as_ref());
+                output(&config, 3, a.as_deref().expect("Can't be None"));
                 a = file1.next().transpose()?;
                 b = file2.next().transpose()?;
-            },
+            }
             Less => {
-                output(&config, 1, a_text.as_ref());
+                output(&config, 1, a.as_deref().expect("Can't be None"));
                 a = file1.next().transpose()?;
-            },
+            }
             Greater => {
-                output(&config, 2, b_text.as_ref());
+                output(&config, 2, b.as_deref().expect("Can't be None"));
                 b = file2.next().transpose()?;
-            },
+            }
         }
     }
 
@@ -150,34 +153,3 @@ pub fn get_args() -> Result<Config> {
             .expect("No delimeter was provided"),
     })
 }
-
-/*
-
-fn find_lines(
-    mut reader: impl BufRead,
-    pattern: &Regex,
-    invert_match: bool,
-) -> Result<Vec<String>> {
-    let mut results = Vec::new();
-    let mut line = String::new();
-
-    loop {
-        // Read line together with line endings
-        if reader.read_line(&mut line)? == 0 {
-            break;
-        }
-
-        // It should either be a match or it is not a match and we are looking for not-matching lines
-        if pattern.is_match(&line) ^ invert_match {
-            // Avoiding clone by taking ownership of the line
-            // The old line content would be swapped with an empty string here
-            results.push(std::mem::take(&mut line));
-        } else {
-            // If we didn't use the line we need to clean it up for the next iteration
-            line.clear();
-        }
-    }
-
-    Ok(results)
-}
-*/
