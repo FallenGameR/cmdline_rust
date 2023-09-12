@@ -14,12 +14,56 @@ pub struct Config {
 }
 
 pub fn run(config: Config) -> Result<()> {
-    dbg!(&config);
+    // Open iterators files
+    let mut file1 = open(&config.file1)?.lines();
+    let mut file2 = open(&config.file2)?.lines();
 
-    // Open input files
-    let file1 = open(&config.file1)?;
-    let file2 = open(&config.file2)?;
-    print!("Opened {} and {}", &config.file1, &config.file2);
+    let report = |column: u8, value: String| match column {
+        1 => {
+            if config.show_col1 {
+                print!("{}\n", value)
+            }
+        }
+        2 => {
+            if config.show_col2 {
+                print!("{}\n", value)
+            }
+        }
+        3 => {
+            if config.show_col3 {
+                print!("{}\n", value)
+            }
+        }
+        _ => panic!("Invalid column number"),
+    };
+
+    loop {
+        // Read lines
+        let mut current1 = file1.next().transpose()?;
+        let mut current2 = file2.next().transpose()?;
+
+        // Exhaust other file if it's counterpart is exhausted
+        let mut current1 = match current1 {
+            Some(value) => Some(value),
+            None => {
+                while let Some(value) = current2 {
+                    report(2, value);
+                    current2 = file2.next().transpose()?;
+                }
+                break
+            }
+        };
+        let mut current2 = match current2 {
+            Some(value) => Some(value),
+            None => {
+                while let Some(value) = current1 {
+                    report(1, value);
+                    current1 = file1.next().transpose()?;
+                }
+                break
+            }
+        };
+    }
 
     /*
     // Files to process
@@ -124,44 +168,6 @@ pub fn get_args() -> Result<Config> {
 }
 
 /*
-
-fn find_files(paths: &[String], recurse: bool) -> Vec<Result<String>> {
-    let mut files = Vec::new();
-
-    for path in paths {
-        // Stdin is a correct path
-        if path == "-" {
-            files.push(Ok("-".into()));
-            continue;
-        }
-
-        // Skip directories if we're not recursing
-        if std::fs::metadata(path).is_ok_and(|m| m.is_dir()) && !recurse {
-            files.push(Err(anyhow!("{path} is a directory")));
-            continue;
-        }
-
-        // Walk the file path - if it is file, just return it,
-        // if it is a folder we can safelly recurse into it
-        for root in WalkDir::new(path) {
-            match root {
-                // Store the errors to handle them upstream without program termination
-                Err(error) => {
-                    files.push(Err(error.into()));
-                }
-                // Found a file path to process
-                Ok(entry) if entry.file_type().is_file() => {
-                    files.push(Ok(entry.path().to_string_lossy().into()));
-                }
-                // Don't modify the output files vector if the entry is anything else
-                // (e.g. a directory that we didn't enumerate yet or a symbolic link)
-                Ok(_) => (),
-            }
-        }
-    }
-
-    files
-}
 
 fn find_lines(
     mut reader: impl BufRead,
