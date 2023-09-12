@@ -1,6 +1,5 @@
 use anyhow::{anyhow, bail, Result};
 use clap::{arg, Arg, ArgAction, Command};
-use std::borrow::Cow;
 use std::cmp::Ordering::*;
 use std::io::{BufRead, BufReader};
 
@@ -13,65 +12,6 @@ pub struct Config {
     show_col3: bool,
     case_insensitive: bool,
     delimeter: String,
-}
-
-pub fn run(config: Config) -> Result<()> {
-    // Case insensitivity
-    let casing = |line: std::result::Result<String, std::io::Error>| -> Result<String> {
-        line.map(|mut line| {
-            if config.case_insensitive {
-                line = line.to_ascii_lowercase();
-            }
-            line
-        })
-        .map_err(|e| e.into())
-    };
-
-    // Open iterators files
-    let mut file1 = open(&config.file1)?.lines().map(casing);
-    let mut file2 = open(&config.file2)?.lines().map(casing);
-
-    let mut a = file1.next().transpose()?;
-    let mut b = file2.next().transpose()?;
-
-    loop {
-        // Exit condition
-        if a.is_none() && b.is_none() {
-            break;
-        }
-
-        // Trivial cases
-        if a.is_none() {
-            output(&config, 2, b.as_deref().expect("Can't be None"));
-            b = file2.next().transpose()?;
-            continue;
-        }
-
-        if b.is_none() {
-            output(&config, 1, a.as_deref().expect("Can't be None"));
-            a = file1.next().transpose()?;
-            continue;
-        }
-
-        // Comparison
-        match a.cmp(&b) {
-            Equal => {
-                output(&config, 3, a.as_deref().expect("Can't be None"));
-                a = file1.next().transpose()?;
-                b = file2.next().transpose()?;
-            }
-            Less => {
-                output(&config, 1, a.as_deref().expect("Can't be None"));
-                a = file1.next().transpose()?;
-            }
-            Greater => {
-                output(&config, 2, b.as_deref().expect("Can't be None"));
-                b = file2.next().transpose()?;
-            }
-        }
-    }
-
-    Ok(())
 }
 
 fn output(config: &Config, column: u8, value: &str) {
@@ -95,6 +35,62 @@ fn output(config: &Config, column: u8, value: &str) {
     let delimeters = config.delimeter.repeat(number_of_delimeters as usize);
     println!("{delimeters}{value}");
 }
+
+pub fn run(config: Config) -> Result<()> {
+    // Case insensitivity
+    let casing = |entry: std::result::Result<String, std::io::Error>| -> Option<String> {
+        match entry {
+            Err(error) => { eprintln!("Error: {error}"); None },
+            Ok(line) => Some(if config.case_insensitive { line.to_ascii_lowercase() } else { line })
+        }
+    };
+
+    // Open iterators
+    let mut file1 = open(&config.file1)?.lines().filter_map(casing);
+    let mut file2 = open(&config.file2)?.lines().filter_map(casing);
+    let mut a = file1.next();
+    let mut b = file2.next();
+
+    loop {
+        // Exit condition
+        if a.is_none() && b.is_none() {
+            break;
+        }
+
+        // Trivial cases
+        if a.is_none() {
+            output(&config, 2, b.as_deref().expect("Can't be None"));
+            b = file2.next();
+            continue;
+        }
+
+        if b.is_none() {
+            output(&config, 1, a.as_deref().expect("Can't be None"));
+            a = file1.next();
+            continue;
+        }
+
+        // Comparison
+        match a.cmp(&b) {
+            Equal => {
+                output(&config, 3, a.as_deref().expect("Can't be None"));
+                a = file1.next();
+                b = file2.next();
+            }
+            Less => {
+                output(&config, 1, a.as_deref().expect("Can't be None"));
+                a = file1.next();
+            }
+            Greater => {
+                output(&config, 2, b.as_deref().expect("Can't be None"));
+                b = file2.next();
+            }
+        }
+    }
+
+    Ok(())
+}
+
 
 fn open(path: &str) -> Result<Box<dyn BufRead>> {
     match path {
