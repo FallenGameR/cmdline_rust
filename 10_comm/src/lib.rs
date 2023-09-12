@@ -51,40 +51,33 @@ pub fn run(config: Config) -> Result<()> {
     let mut a = file1.next();
     let mut b = file2.next();
 
+    // Line comparison
     loop {
-        // Exit condition
-        if a.is_none() && b.is_none() {
-            break;
-        }
-
-        // Trivial cases
-        if a.is_none() {
-            output(&config, 2, b.as_deref().expect("Can't be None"));
-            b = file2.next();
-            continue;
-        }
-
-        if b.is_none() {
-            output(&config, 1, a.as_deref().expect("Can't be None"));
-            a = file1.next();
-            continue;
-        }
-
-        // Comparison
-        match a.cmp(&b) {
-            Equal => {
-                output(&config, 3, a.as_deref().expect("Can't be None"));
+        match (&a, &b) {
+            (None, None) => break,
+            (Some(a_text), None) => {
+                output(&config, 1, a_text);
                 a = file1.next();
+            },
+            (None, Some(b_text)) => {
+                output(&config, 2, b_text);
                 b = file2.next();
-            }
-            Less => {
-                output(&config, 1, a.as_deref().expect("Can't be None"));
-                a = file1.next();
-            }
-            Greater => {
-                output(&config, 2, b.as_deref().expect("Can't be None"));
-                b = file2.next();
-            }
+            },
+            (Some(a_text), Some(b_text)) => match a_text.cmp(b_text) {
+                Equal => {
+                    output(&config, 3, a_text);
+                    a = file1.next();
+                    b = file2.next();
+                }
+                Less => {
+                    output(&config, 1, a_text);
+                    a = file1.next();
+                }
+                Greater => {
+                    output(&config, 2, b_text);
+                    b = file2.next();
+                }
+            },
         }
     }
 
