@@ -24,10 +24,10 @@ pub fn get_args() -> Result<Config> {
         .about("Previews text from the back of a number of files")
         .args([
             arg!(<FILES> ... "Files to process"),
-            arg!(-l --lines <LINES> "From what line to read, e.g. 1 or -1 means print the last one, +1 all but the first one").default_value("10")
+            arg!(-n --lines <LINES> "From what line to read, e.g. 1 or -1 means print the last one, +1 all but the first one").default_value("10")
                 .value_parser(parse_tail_value)
                 .conflicts_with_all(["bytes"]),
-            arg!(-b --bytes <BYTES> "From what byte to read, e.g. 1 or -1 means print the last one, +1 all but the first one")
+            arg!(-c --bytes <BYTES> "From what byte to read, e.g. 1 or -1 means print the last one, +1 all but the first one")
                 .value_parser(parse_tail_value)
                 .conflicts_with_all(["lines"]),
             arg!(-q --quiet "When printing multiple files, don't print the header with file names"),
