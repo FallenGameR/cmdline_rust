@@ -44,14 +44,11 @@ pub fn get_args() -> Result<Config> {
 }
 
 fn parse_tail_value(text: &str) -> Result<TailValue> {
-    text.parse::<i64>().map_or_else(
-        |e| Err(e.into()),
-        |value| {
-            if value == 0 && text.starts_with('+') {
-                return Ok(TailValue::PositiveZero);
-            }
-            Ok(TailValue::Number(value))
-        })
+    match text.parse() {
+        Ok(value) if value == 0 && text.starts_with('+') => Ok(TailValue::PositiveZero),
+        Ok(value) => Ok(TailValue::Number(value)),
+        Err(error) => Err(error.into()),
+    }
 }
 
 pub fn run(config: Config) -> Result<()> {
