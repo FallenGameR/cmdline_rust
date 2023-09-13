@@ -43,8 +43,16 @@ pub fn get_args() -> Result<Config> {
     })
 }
 
-fn parse_tail_value(_: &str) -> Result<TailValue> {
-    todo!("parse_tail_value")
+fn parse_tail_value(text: &str) -> Result<TailValue> {
+    match text.parse::<i64>() {
+        Err(error) => Err(error.into()),
+        Ok(value) => {
+            if text.chars().next().is_some_and(|c| c == '+') {
+                return Ok(TailValue::PositiveZero);
+            }
+            Ok(TailValue::Number(value))
+        }
+    }
 }
 
 pub fn run(config: Config) -> Result<()> {
