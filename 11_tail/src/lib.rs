@@ -2,7 +2,7 @@ use anyhow::{anyhow, Result};
 use clap::{arg, Command};
 use std::io::{BufRead, BufReader};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 enum TailValue {
     PositiveZero,
     Number(i64),
@@ -53,7 +53,6 @@ pub fn run(config: Config) -> Result<()> {
     Ok(())
 }
 
-
 fn open(path: &str) -> Result<Box<dyn BufRead>> {
     match path {
         "-" => Ok(Box::new(BufReader::new(std::io::stdin()))),
@@ -63,15 +62,19 @@ fn open(path: &str) -> Result<Box<dyn BufRead>> {
     }
 }
 
+fn count_lines_bytes(_: &str) -> Result<(usize, usize)> {
+    todo!("count_lines_bytes")
+}
 
-
-
+fn get_start_index(_: &TailValue, _: usize) -> Option<usize> {
+    todo!("get_start_index")
+}
 
 // --------------------------------------------------
 #[cfg(test)]
 mod tests {
     use super::{
-        count_lines_bytes, get_start_index, parse_num, TailValue::*,
+        count_lines_bytes, get_start_index, parse_tail_value, TailValue::*,
     };
 
     #[test]
@@ -121,56 +124,56 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_num() {
+    fn test_parse_tail_value() {
         // All integers should be interpreted as negative numbers
-        let res = parse_num("3");
+        let res = parse_tail_value("3");
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), Number(-3));
 
         // A leading "+" should result in a positive number
-        let res = parse_num("+3");
+        let res = parse_tail_value("+3");
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), Number(3));
 
         // An explicit "-" value should result in a negative number
-        let res = parse_num("-3");
+        let res = parse_tail_value("-3");
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), Number(-3));
 
         // Zero is zero
-        let res = parse_num("0");
+        let res = parse_tail_value("0");
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), Number(0));
 
         // Plus zero is special
-        let res = parse_num("+0");
+        let res = parse_tail_value("+0");
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), PositiveZero);
 
         // Test boundaries
-        let res = parse_num(&i64::MAX.to_string());
+        let res = parse_tail_value(&i64::MAX.to_string());
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), Number(i64::MIN + 1));
 
-        let res = parse_num(&(i64::MIN + 1).to_string());
+        let res = parse_tail_value(&(i64::MIN + 1).to_string());
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), Number(i64::MIN + 1));
 
-        let res = parse_num(&format!("+{}", i64::MAX));
+        let res = parse_tail_value(&format!("+{}", i64::MAX));
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), Number(i64::MAX));
 
-        let res = parse_num(&i64::MIN.to_string());
+        let res = parse_tail_value(&i64::MIN.to_string());
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), Number(i64::MIN));
 
         // A floating-point value is invalid
-        let res = parse_num("3.14");
+        let res = parse_tail_value("3.14");
         assert!(res.is_err());
         assert_eq!(res.unwrap_err().to_string(), "3.14");
 
         // Any non-integer string is invalid
-        let res = parse_num("foo");
+        let res = parse_tail_value("foo");
         assert!(res.is_err());
         assert_eq!(res.unwrap_err().to_string(), "foo");
     }
