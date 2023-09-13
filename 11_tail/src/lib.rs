@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::{arg, Command};
-use std::{fs::{File, self}, io::{BufReader, Read}};
+use std::{fs::File, io::{BufReader, Read}};
 
 #[derive(Debug)]
 pub struct Config {
@@ -68,7 +68,7 @@ const BUFFER_SIZE: usize = PAGE_SIZE * 2;
 
 fn count_lines_bytes(path: &str) -> Result<(usize, usize)> {
     let file = File::open(path).map_err(anyhow::Error::from)?;
-    let mut buffer = vec![0; BUFFER_SIZE];
+    let mut buffer = [0; BUFFER_SIZE];
     let mut reader = BufReader::new(file);
 
     let mut lines = 0;
