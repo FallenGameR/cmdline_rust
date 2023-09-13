@@ -1,6 +1,6 @@
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use clap::{arg, Command};
-use std::io::{BufRead, BufReader};
+use std::fs::File;
 
 #[derive(Debug)]
 pub struct Config {
@@ -55,16 +55,12 @@ fn parse_tail_value(text: &str) -> Result<TailValue> {
 pub fn run(config: Config) -> Result<()> {
     dbg!(&config);
 
-    Ok(())
-}
-
-fn open(path: &str) -> Result<Box<dyn BufRead>> {
-    match path {
-        "-" => Ok(Box::new(BufReader::new(std::io::stdin()))),
-        _ => Ok(Box::new(BufReader::new(
-            std::fs::File::open(path).map_err(|e| anyhow!("{path}: {e}"))?,
-        ))),
+    for file in config.files {
+        let file = File::open(file).map_err(anyhow::Error::from)?;
+        dbg!(file);
     }
+
+    Ok(())
 }
 
 fn count_lines_bytes(_: &str) -> Result<(usize, usize)> {
