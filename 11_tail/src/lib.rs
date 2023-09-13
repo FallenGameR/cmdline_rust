@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::{arg, Command};
-use std::fs::File;
+use std::{fs::{File, self}, io::{BufReader, Read}};
 
 #[derive(Debug)]
 pub struct Config {
@@ -63,8 +63,28 @@ pub fn run(config: Config) -> Result<()> {
     Ok(())
 }
 
-fn count_lines_bytes(_: &str) -> Result<(usize, usize)> {
-    todo!("count_lines_bytes")
+const PAGE_SIZE: usize = 4096;
+const BUFFER_SIZE: usize = PAGE_SIZE * 2;
+
+fn count_lines_bytes(path: &str) -> Result<(usize, usize)> {
+    let file = File::open(path).map_err(anyhow::Error::from)?;
+    let mut buffer = vec![0; BUFFER_SIZE];
+    let mut reader = BufReader::new(file);
+
+    let mut lines = 0;
+    let mut bytes = 0;
+
+    loop {
+        let len = reader.read(&mut buffer)?;
+        if len == 0 {
+            break;
+        }
+
+        lines += buffer[0..len].iter().filter(|&&b| b == b'\n').count();
+        bytes += len;
+    }
+
+    Ok((lines, bytes))
 }
 
 fn get_start_index(_: &TailValue, _: usize) -> Option<usize> {
