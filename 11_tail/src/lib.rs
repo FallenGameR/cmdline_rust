@@ -178,11 +178,11 @@ mod tests {
         // A floating-point value is invalid
         let res = parse_tail_value("3.14");
         assert!(res.is_err());
-        assert_eq!(res.unwrap_err().to_string(), "3.14");
+        assert_eq!(res.unwrap_err().to_string(), "invalid digit found in string");
 
         // Any non-integer string is invalid
         let res = parse_tail_value("foo");
         assert!(res.is_err());
-        assert_eq!(res.unwrap_err().to_string(), "foo");
+        assert_eq!(res.unwrap_err().to_string(), "invalid digit found in string");
     }
 }
