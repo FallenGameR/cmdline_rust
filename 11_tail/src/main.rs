@@ -1,3 +1,6 @@
 fn main() {
-    println!("Hello, world!");
+    if let Err(error) = tail::get_args().and_then(tail::run) {
+        eprintln!("{error}");
+        std::process::exit(1);
+    }
 }
