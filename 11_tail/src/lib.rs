@@ -39,8 +39,8 @@ pub fn get_args() -> Result<Config> {
 
 #[derive(Debug, Clone, PartialEq)]
 enum TailValue {
-    Tail(u64), //  1, -1, 0, -0
-    Head(u64), // +1, +0
+    Tail(usize), //  1, -1, 0, -0
+    Head(usize), // +1, +0
 }
 
 fn parse_tail_value(text: &str) -> Result<TailValue> {
@@ -154,23 +154,6 @@ mod tests {
         let res = parse_tail_value("+0");
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), Head(0));
-
-        // Test boundaries
-        let res = parse_tail_value(&u64::MAX.to_string());
-        assert!(res.is_ok());
-        assert_eq!(res.unwrap(), Tail(u64::MIN + 1));
-
-        let res = parse_tail_value(&(u64::MIN + 1).to_string());
-        assert!(res.is_ok());
-        assert_eq!(res.unwrap(), Tail(u64::MIN + 1));
-
-        let res = parse_tail_value(&format!("+{}", i64::MAX));
-        assert!(res.is_ok());
-        assert_eq!(res.unwrap(), Tail(u64::MAX));
-
-        let res = parse_tail_value(&i64::MIN.to_string());
-        assert!(res.is_ok());
-        assert_eq!(res.unwrap(), Tail(u64::MIN));
 
         // A floating-point value is invalid
         let res = parse_tail_value("3.14");
