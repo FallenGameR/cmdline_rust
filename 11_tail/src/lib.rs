@@ -6,6 +6,8 @@ use std::io::{BufRead, BufReader};
 enum TailValue {
     PositiveZero,
     Number(i64),
+
+    // Replace with Tail and Head instead
 }
 
 #[derive(Debug)]
@@ -46,6 +48,8 @@ pub fn get_args() -> Result<Config> {
 fn parse_tail_value(text: &str) -> Result<TailValue> {
     match text.parse() {
         Ok(value) if value == 0 && text.starts_with('+') => Ok(TailValue::PositiveZero),
+        Ok(value) if value > 0 && text.starts_with('+') => Ok(TailValue::Number(value)),
+        Ok(value) if value > 0 => Ok(TailValue::Number(-value)),
         Ok(value) => Ok(TailValue::Number(value)),
         Err(error) => Err(error.into()),
     }
