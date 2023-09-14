@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use clap::{arg, Command};
 use std::{fs::File, io::{BufReader, Read, BufRead}, ops::Range};
 
@@ -53,11 +53,12 @@ fn parse_tail_value(text: &str) -> Result<Position> {
 }
 
 pub fn run(config: Config) -> Result<()> {
-    dbg!(&config);
-
     for file in config.files {
-        let file = File::open(file).map_err(anyhow::Error::from)?;
-        dbg!(file);
+        let total = count_lines_bytes(&file)?;
+        match config.bytes.as_ref() {
+            Some(bytes) => print_bytes(file, &bytes, total.bytes)?,
+            None => print_lines(file, &config.lines, total.lines)?,
+        }
     }
 
     Ok(())
@@ -109,8 +110,32 @@ fn get_tail_range(position: &Position, total: usize) -> Option<Range<usize>> {
     if offset >= total { None } else { Some(offset..total) }
 }
 
-fn print_lines(mut file: impl BufRead, position: &Position, total_lines: usize) -> Result<()> {
-    todo!("print_lines")
+fn print_lines(file: String, position: &Position, total_lines: usize) -> Result<()> {
+    let Some(range) = get_tail_range(position, total_lines) else {
+        return Err(anyhow!("{position:?}: invalid line position for file {file}"));
+    };
+
+    let lines = BufReader::new(File::open(file)?).lines();
+    for line in lines.skip(range.start).take(range.end - range.start) {
+        println!("{}", line?);
+    }
+
+    Ok(())
+}
+
+fn print_bytes(file: String, position: &Position, total_bytes: usize) -> Result<()> {
+    let Some(range) = get_tail_range(position, total_bytes) else {
+        return Err(anyhow!("{position:?}: invalid byte position for file {file}"));
+    };
+
+    let bytes = BufReader::new(File::open(file)?)
+        .bytes()
+        .skip(range.start)
+        .take(range.end - range.start)
+        .collect::<Result<Vec<u8>, std::io::Error>>()?;
+    print!("{}", String::from_utf8_lossy(&bytes));
+
+    Ok(())
 }
 
 // --------------------------------------------------
