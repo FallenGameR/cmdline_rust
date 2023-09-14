@@ -66,7 +66,13 @@ pub fn run(config: Config) -> Result<()> {
 const PAGE_SIZE: usize = 4096;
 const BUFFER_SIZE: usize = PAGE_SIZE * 2;
 
-fn count_lines_bytes(path: &str) -> Result<(usize, usize)> {
+#[derive(Debug, PartialEq)]
+struct Total {
+    lines: usize,
+    bytes: usize,
+}
+
+fn count_lines_bytes(path: &str) -> Result<Total> {
     let file = File::open(path).map_err(anyhow::Error::from)?;
     let mut buffer = [0; BUFFER_SIZE];
     let mut reader = BufReader::new(file);
@@ -84,7 +90,7 @@ fn count_lines_bytes(path: &str) -> Result<(usize, usize)> {
         bytes += len;
     }
 
-    Ok((lines, bytes))
+    Ok(Total{ lines, bytes })
 }
 
 // indexes  01234
@@ -110,6 +116,8 @@ fn print_lines(mut file: impl BufRead, position: &Position, total_lines: usize) 
 // --------------------------------------------------
 #[cfg(test)]
 mod tests {
+    use crate::Total;
+
     use super::{
         count_lines_bytes, get_tail_range, parse_tail_value, Position::*,
     };
@@ -118,11 +126,11 @@ mod tests {
     fn test_count_lines_bytes() {
         let res = count_lines_bytes("tests/inputs/one.txt");
         assert!(res.is_ok());
-        assert_eq!(res.unwrap(), (1, 24));
+        assert_eq!(res.unwrap(), Total{ lines: 1, bytes: 24 });
 
         let res = count_lines_bytes("tests/inputs/ten.txt");
         assert!(res.is_ok());
-        assert_eq!(res.unwrap(), (10, 49));
+        assert_eq!(res.unwrap(), Total{ lines: 10, bytes: 49 });
     }
 
     #[test]
