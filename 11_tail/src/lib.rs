@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::{arg, Command};
-use std::{fs::File, io::{BufReader, Read, BufRead}};
+use std::{fs::File, io::{BufReader, Read, BufRead}, ops::RangeInclusive};
 
 #[derive(Debug)]
 pub struct Config {
@@ -39,15 +39,15 @@ pub fn get_args() -> Result<Config> {
 
 #[derive(Debug, Clone, PartialEq)]
 enum Position {
-    Tail(usize), //  1, -1, 0, -0
-    Head(usize), // +1, +0
+    FromTail(usize), //  1, -1, 0, -0
+    FromHead(usize), // +1, +0
 }
 
 fn parse_tail_value(text: &str) -> Result<Position> {
     match text.parse::<i64>() {
-        Ok(value) if text.starts_with('+') => Ok(Position::Head(value.try_into()?)),
-        Ok(value) if value < 0 => Ok(Position::Tail((-value).try_into()?)),
-        Ok(value) => Ok(Position::Tail(value.try_into()?)),
+        Ok(value) if text.starts_with('+') => Ok(Position::FromHead(value.try_into()?)),
+        Ok(value) if value < 0 => Ok(Position::FromTail((-value).try_into()?)),
+        Ok(value) => Ok(Position::FromTail(value.try_into()?)),
         Err(error) => Err(error.into()),
     }
 }
@@ -87,6 +87,17 @@ fn count_lines_bytes(path: &str) -> Result<(usize, usize)> {
     Ok((lines, bytes))
 }
 
+fn get_tail_range(position: &Position, total: usize) -> Option<RangeInclusive<usize>> {
+    match position {
+        Position::FromHead(n) => {
+            Some(*n..=total)
+        },
+        Position::FromTail(n) => {
+            Some(total-n..=total)
+        }
+    }
+}
+
 fn get_start_index(position: &Position, total_lines: usize) -> Option<usize> {
     todo!("get_start_index")
 }
@@ -116,36 +127,36 @@ mod tests {
     #[test]
     fn test_get_start_index() {
         // +0 from an empty file (0 lines/bytes) returns None
-        assert_eq!(get_start_index(&Head(0), 0), None);
+        assert_eq!(get_start_index(&FromHead(0), 0), None);
 
         // +0 from a nonempty file returns an index that
         // is one less than the number of lines/bytes
-        assert_eq!(get_start_index(&Head(0), 1), Some(0));
+        assert_eq!(get_start_index(&FromHead(0), 1), Some(0));
 
         // Taking 0 lines/bytes returns None
-        assert_eq!(get_start_index(&Tail(0), 1), None);
+        assert_eq!(get_start_index(&FromTail(0), 1), None);
 
         // Taking any lines/bytes from an empty file returns None
-        assert_eq!(get_start_index(&Tail(1), 0), None);
+        assert_eq!(get_start_index(&FromTail(1), 0), None);
 
         // Taking more lines/bytes than is available returns None
-        assert_eq!(get_start_index(&Tail(2), 1), None);
+        assert_eq!(get_start_index(&FromTail(2), 1), None);
 
         // When starting line/byte is less than total lines/bytes,
         // return one less than starting number
-        assert_eq!(get_start_index(&Tail(1), 10), Some(0));
-        assert_eq!(get_start_index(&Tail(2), 10), Some(1));
-        assert_eq!(get_start_index(&Tail(3), 10), Some(2));
+        assert_eq!(get_start_index(&FromTail(1), 10), Some(0));
+        assert_eq!(get_start_index(&FromTail(2), 10), Some(1));
+        assert_eq!(get_start_index(&FromTail(3), 10), Some(2));
 
         // When starting line/byte is negative and less than total,
         // return total - start
-        assert_eq!(get_start_index(&Tail(1), 10), Some(9));
-        assert_eq!(get_start_index(&Tail(2), 10), Some(8));
-        assert_eq!(get_start_index(&Tail(3), 10), Some(7));
+        assert_eq!(get_start_index(&FromTail(1), 10), Some(9));
+        assert_eq!(get_start_index(&FromTail(2), 10), Some(8));
+        assert_eq!(get_start_index(&FromTail(3), 10), Some(7));
 
         // When the starting line/byte is negative and more than the total,
         // return 0 to print the whole file
-        assert_eq!(get_start_index(&Tail(20), 10), Some(0));
+        assert_eq!(get_start_index(&FromTail(20), 10), Some(0));
     }
 
     #[test]
@@ -153,27 +164,27 @@ mod tests {
         // All integers should be interpreted as negative numbers
         let res = parse_tail_value("3");
         assert!(res.is_ok());
-        assert_eq!(res.unwrap(), Tail(3));
+        assert_eq!(res.unwrap(), FromTail(3));
 
         // A leading "+" should result in a positive number
         let res = parse_tail_value("+3");
         assert!(res.is_ok());
-        assert_eq!(res.unwrap(), Head(3));
+        assert_eq!(res.unwrap(), FromHead(3));
 
         // An explicit "-" value should result in a negative number
         let res = parse_tail_value("-3");
         assert!(res.is_ok());
-        assert_eq!(res.unwrap(), Tail(3));
+        assert_eq!(res.unwrap(), FromTail(3));
 
         // Zero is zero
         let res = parse_tail_value("0");
         assert!(res.is_ok());
-        assert_eq!(res.unwrap(), Tail(0));
+        assert_eq!(res.unwrap(), FromTail(0));
 
         // Plus zero is special
         let res = parse_tail_value("+0");
         assert!(res.is_ok());
-        assert_eq!(res.unwrap(), Head(0));
+        assert_eq!(res.unwrap(), FromHead(0));
 
         // A floating-point value is invalid
         let res = parse_tail_value("3.14");
