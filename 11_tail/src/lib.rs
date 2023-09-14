@@ -1,12 +1,12 @@
 use anyhow::Result;
 use clap::{arg, Command};
-use std::{fs::File, io::{BufReader, Read}};
+use std::{fs::File, io::{BufReader, Read, BufRead}};
 
 #[derive(Debug)]
 pub struct Config {
     files: Vec<String>,
-    lines: TailValue,
-    bytes: Option<TailValue>,
+    lines: Position,
+    bytes: Option<Position>,
     quiet: bool,
 }
 
@@ -38,16 +38,16 @@ pub fn get_args() -> Result<Config> {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-enum TailValue {
+enum Position {
     Tail(usize), //  1, -1, 0, -0
     Head(usize), // +1, +0
 }
 
-fn parse_tail_value(text: &str) -> Result<TailValue> {
+fn parse_tail_value(text: &str) -> Result<Position> {
     match text.parse::<i64>() {
-        Ok(value) if text.starts_with('+') => Ok(TailValue::Head(value.try_into()?)),
-        Ok(value) if value < 0 => Ok(TailValue::Tail((-value).try_into()?)),
-        Ok(value) => Ok(TailValue::Tail(value.try_into()?)),
+        Ok(value) if text.starts_with('+') => Ok(Position::Head(value.try_into()?)),
+        Ok(value) if value < 0 => Ok(Position::Tail((-value).try_into()?)),
+        Ok(value) => Ok(Position::Tail(value.try_into()?)),
         Err(error) => Err(error.into()),
     }
 }
@@ -87,15 +87,19 @@ fn count_lines_bytes(path: &str) -> Result<(usize, usize)> {
     Ok((lines, bytes))
 }
 
-fn get_start_index(_: &TailValue, _: usize) -> Option<usize> {
+fn get_start_index(position: &Position, total_lines: usize) -> Option<usize> {
     todo!("get_start_index")
+}
+
+fn print_lines(mut file: impl BufRead, position: &Position, total_lines: usize) -> Result<()> {
+    todo!("print_lines")
 }
 
 // --------------------------------------------------
 #[cfg(test)]
 mod tests {
     use super::{
-        count_lines_bytes, get_start_index, parse_tail_value, TailValue::*,
+        count_lines_bytes, get_start_index, parse_tail_value, Position::*,
     };
 
     #[test]
