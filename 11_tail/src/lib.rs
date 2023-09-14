@@ -53,7 +53,11 @@ fn parse_tail_value(text: &str) -> Result<Position> {
 }
 
 pub fn run(config: Config) -> Result<()> {
-    for file in config.files {
+    for file in &config.files {
+        if config.files.len() > 1 && !config.quiet {
+            println!("==> {file} <==");
+        }
+
         let total = count_lines_bytes(&file)?;
         match config.bytes.as_ref() {
             Some(bytes) => print_bytes(file, &bytes, total.bytes)?,
@@ -110,7 +114,7 @@ fn get_tail_range(position: &Position, total: usize) -> Option<Range<usize>> {
     if offset >= total { None } else { Some(offset..total) }
 }
 
-fn print_lines(file: String, position: &Position, total_lines: usize) -> Result<()> {
+fn print_lines(file: &str, position: &Position, total_lines: usize) -> Result<()> {
     let Some(range) = get_tail_range(position, total_lines) else {
         return Err(anyhow!("{position:?}: invalid line position for file {file}"));
     };
@@ -123,7 +127,7 @@ fn print_lines(file: String, position: &Position, total_lines: usize) -> Result<
     Ok(())
 }
 
-fn print_bytes(file: String, position: &Position, total_bytes: usize) -> Result<()> {
+fn print_bytes(file: &str, position: &Position, total_bytes: usize) -> Result<()> {
     let Some(range) = get_tail_range(position, total_bytes) else {
         return Err(anyhow!("{position:?}: invalid byte position for file {file}"));
     };
