@@ -25,6 +25,28 @@ struct Total {
     bytes: usize,
 }
 
+impl Total {
+    fn count(path: &str) -> Result<Total> {
+        let file = File::open(path)?;
+        let mut buffer = [0; BUFFER_SIZE];
+        let mut reader = BufReader::new(file);
+        let mut lines = 0;
+        let mut bytes = 0;
+
+        loop {
+            let len = reader.read(&mut buffer)?;
+            if len == 0 {
+                break;
+            }
+
+            lines += buffer[0..len].iter().filter(|&&b| b == b'\n').count();
+            bytes += len;
+        }
+
+        Ok(Total{ lines, bytes })
+    }
+}
+
 pub fn get_args() -> Result<Config> {
     // CLI arguments
     let mut matches = Command::new("tail")
@@ -67,7 +89,7 @@ pub fn run(config: Config) -> Result<()> {
             println!("==> {file} <==");
         }
 
-        let total = count_lines_bytes(&file)?;
+        let total = Total::count(&file)?;
         match config.bytes.as_ref() {
             Some(bytes) => print_bytes(file, &bytes, total.bytes)?,
             None => print_lines(file, &config.lines, total.lines)?,
@@ -75,26 +97,6 @@ pub fn run(config: Config) -> Result<()> {
     }
 
     Ok(())
-}
-
-fn count_lines_bytes(path: &str) -> Result<Total> {
-    let file = File::open(path)?;
-    let mut buffer = [0; BUFFER_SIZE];
-    let mut reader = BufReader::new(file);
-    let mut lines = 0;
-    let mut bytes = 0;
-
-    loop {
-        let len = reader.read(&mut buffer)?;
-        if len == 0 {
-            break;
-        }
-
-        lines += buffer[0..len].iter().filter(|&&b| b == b'\n').count();
-        bytes += len;
-    }
-
-    Ok(Total{ lines, bytes })
 }
 
 fn print_lines(file: &str, position: &Position, total_lines: usize) -> Result<()> {
@@ -147,16 +149,16 @@ mod tests {
     use crate::Total;
 
     use super::{
-        count_lines_bytes, get_tail_range, parse_tail_value, Position::*,
+        get_tail_range, parse_tail_value, Position::*,
     };
 
     #[test]
     fn test_count_lines_bytes() {
-        let res = count_lines_bytes("tests/inputs/one.txt");
+        let res = Total::count("tests/inputs/one.txt");
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), Total{ lines: 1, bytes: 24 });
 
-        let res = count_lines_bytes("tests/inputs/ten.txt");
+        let res = Total::count("tests/inputs/ten.txt");
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), Total{ lines: 10, bytes: 49 });
     }
