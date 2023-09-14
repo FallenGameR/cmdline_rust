@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::{arg, Command};
-use std::{fs::File, io::{BufReader, Read, BufRead}, ops::RangeInclusive};
+use std::{fs::File, io::{BufReader, Read, BufRead}, ops::Range};
 
 #[derive(Debug)]
 pub struct Config {
@@ -87,15 +87,18 @@ fn count_lines_bytes(path: &str) -> Result<(usize, usize)> {
     Ok((lines, bytes))
 }
 
-fn get_tail_range(position: &Position, total: usize) -> Option<RangeInclusive<usize>> {
-    match position {
-        Position::FromHead(n) => {
-            Some(*n..=total)
-        },
-        Position::FromTail(n) => {
-            Some(total-n..=total)
-        }
-    }
+// indexes  01234
+// total    5
+// position uses 0..=5 and it offset from end or begining
+// head     0..=4 from what index to start till the end, e.g. 1 results in 1..5
+// tail     1..=5 how many elements to show from the end, e.g. 1 results in 4..5
+fn get_tail_range(position: &Position, total: usize) -> Option<Range<usize>> {
+    let offset = match position {
+        Position::FromHead(offset) => *offset,
+        Position::FromTail(elements) => total.checked_sub(*elements)?,
+    };
+
+    if offset >= total { None } else { Some(offset..total) }
 }
 
 fn get_start_index(position: &Position, total_lines: usize) -> Option<usize> {
