@@ -1,6 +1,9 @@
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 use clap::{arg, Command};
-use std::{fs::File, io::{BufReader, Read, BufRead}, ops::Range};
+use std::{io::{BufRead, BufReader, Read}, fs::File, ops::Range};
+
+const PAGE_SIZE: usize = 4096;
+const BUFFER_SIZE: usize = PAGE_SIZE * 2;
 
 #[derive(Debug)]
 pub struct Config {
@@ -8,6 +11,18 @@ pub struct Config {
     lines: Position,
     bytes: Option<Position>,
     quiet: bool,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+enum Position {
+    FromTail(usize), //  1, -1, 0, -0
+    FromHead(usize), // +1, +0
+}
+
+#[derive(Debug, PartialEq)]
+struct Total {
+    lines: usize,
+    bytes: usize,
 }
 
 pub fn get_args() -> Result<Config> {
@@ -37,12 +52,6 @@ pub fn get_args() -> Result<Config> {
     })
 }
 
-#[derive(Debug, Clone, PartialEq)]
-enum Position {
-    FromTail(usize), //  1, -1, 0, -0
-    FromHead(usize), // +1, +0
-}
-
 fn parse_tail_value(text: &str) -> Result<Position> {
     match text.parse::<i64>() {
         Ok(value) if text.starts_with('+') => Ok(Position::FromHead(value.try_into()?)),
@@ -68,15 +77,6 @@ pub fn run(config: Config) -> Result<()> {
     Ok(())
 }
 
-const PAGE_SIZE: usize = 4096;
-const BUFFER_SIZE: usize = PAGE_SIZE * 2;
-
-#[derive(Debug, PartialEq)]
-struct Total {
-    lines: usize,
-    bytes: usize,
-}
-
 fn count_lines_bytes(path: &str) -> Result<Total> {
     let file = File::open(path).map_err(anyhow::Error::from)?;
     let mut buffer = [0; BUFFER_SIZE];
@@ -96,22 +96,6 @@ fn count_lines_bytes(path: &str) -> Result<Total> {
     }
 
     Ok(Total{ lines, bytes })
-}
-
-// indexes  01234
-// total    5
-// position uses 0..=5 and it offset from end or begining
-// head     0..=4 from what index to start till the end, e.g. 1 results in 1..5
-// tail     1..=5 how many elements to show from the end, e.g. 1 results in 4..5
-// in case when position is counted from tail and the range is going to
-// be more then full file we return range that covers the whole file
-fn get_tail_range(position: &Position, total: usize) -> Option<Range<usize>> {
-    let offset = match position {
-        Position::FromHead(offset) => *offset,
-        Position::FromTail(elements) => total.saturating_sub(*elements),
-    };
-
-    if offset >= total { None } else { Some(offset..total) }
 }
 
 fn print_lines(file: &str, position: &Position, total_lines: usize) -> Result<()> {
@@ -140,6 +124,22 @@ fn print_bytes(file: &str, position: &Position, total_bytes: usize) -> Result<()
     print!("{}", String::from_utf8_lossy(&bytes));
 
     Ok(())
+}
+
+// indexes  01234
+// total    5
+// position uses 0..=5 and it offset from end or begining
+// head     0..=4 from what index to start till the end, e.g. 1 results in 1..5
+// tail     1..=5 how many elements to show from the end, e.g. 1 results in 4..5
+// in case when position is counted from tail and the range is going to
+// be more then full file we return range that covers the whole file
+fn get_tail_range(position: &Position, total: usize) -> Option<Range<usize>> {
+    let offset = match position {
+        Position::FromHead(offset) => *offset,
+        Position::FromTail(elements) => total.saturating_sub(*elements),
+    };
+
+    if offset >= total { None } else { Some(offset..total) }
 }
 
 // --------------------------------------------------
