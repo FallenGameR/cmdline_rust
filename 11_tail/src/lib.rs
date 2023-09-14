@@ -78,10 +78,9 @@ pub fn run(config: Config) -> Result<()> {
 }
 
 fn count_lines_bytes(path: &str) -> Result<Total> {
-    let file = File::open(path).map_err(anyhow::Error::from)?;
+    let file = File::open(path)?;
     let mut buffer = [0; BUFFER_SIZE];
     let mut reader = BufReader::new(file);
-
     let mut lines = 0;
     let mut bytes = 0;
 
