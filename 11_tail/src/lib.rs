@@ -92,10 +92,12 @@ fn count_lines_bytes(path: &str) -> Result<(usize, usize)> {
 // position uses 0..=5 and it offset from end or begining
 // head     0..=4 from what index to start till the end, e.g. 1 results in 1..5
 // tail     1..=5 how many elements to show from the end, e.g. 1 results in 4..5
+// in case when position is counted from tail and the range is going to
+// be more then full file we return range that covers the whole file
 fn get_tail_range(position: &Position, total: usize) -> Option<Range<usize>> {
     let offset = match position {
         Position::FromHead(offset) => *offset,
-        Position::FromTail(elements) => total.checked_sub(*elements)?,
+        Position::FromTail(elements) => total.saturating_sub(*elements),
     };
 
     if offset >= total { None } else { Some(offset..total) }
@@ -138,9 +140,6 @@ mod tests {
         // Taking any lines/bytes from an empty file returns None
         assert_eq!(get_tail_range(&FromTail(1), 0), None);
 
-        // Taking more lines/bytes than is available returns None
-        assert_eq!(get_tail_range(&FromTail(2), 1), None);
-
         // When starting line/byte is less than total lines/bytes,
         // return one less than starting number
         assert_eq!(get_tail_range(&FromTail(1), 10), Some(9..10));
@@ -155,6 +154,7 @@ mod tests {
 
         // When the starting line/byte is negative and more than the total,
         // return 0 to print the whole file
+        assert_eq!(get_tail_range(&FromTail(2), 1), Some(0..1));
         assert_eq!(get_tail_range(&FromTail(20), 10), Some(0..10));
     }
 
