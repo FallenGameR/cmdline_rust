@@ -101,10 +101,6 @@ fn get_tail_range(position: &Position, total: usize) -> Option<Range<usize>> {
     if offset >= total { None } else { Some(offset..total) }
 }
 
-fn get_start_index(position: &Position, total_lines: usize) -> Option<usize> {
-    todo!("get_start_index")
-}
-
 fn print_lines(mut file: impl BufRead, position: &Position, total_lines: usize) -> Result<()> {
     todo!("print_lines")
 }
@@ -113,7 +109,7 @@ fn print_lines(mut file: impl BufRead, position: &Position, total_lines: usize) 
 #[cfg(test)]
 mod tests {
     use super::{
-        count_lines_bytes, get_start_index, parse_tail_value, Position::*,
+        count_lines_bytes, get_tail_range, parse_tail_value, Position::*,
     };
 
     #[test]
@@ -128,38 +124,38 @@ mod tests {
     }
 
     #[test]
-    fn test_get_start_index() {
+    fn test_get_tail_range() {
         // +0 from an empty file (0 lines/bytes) returns None
-        assert_eq!(get_start_index(&FromHead(0), 0), None);
+        assert_eq!(get_tail_range(&FromHead(0), 0), None);
 
         // +0 from a nonempty file returns an index that
         // is one less than the number of lines/bytes
-        assert_eq!(get_start_index(&FromHead(0), 1), Some(0));
+        assert_eq!(get_tail_range(&FromHead(0), 1), Some(0..1));
 
         // Taking 0 lines/bytes returns None
-        assert_eq!(get_start_index(&FromTail(0), 1), None);
+        assert_eq!(get_tail_range(&FromTail(0), 1), None);
 
         // Taking any lines/bytes from an empty file returns None
-        assert_eq!(get_start_index(&FromTail(1), 0), None);
+        assert_eq!(get_tail_range(&FromTail(1), 0), None);
 
         // Taking more lines/bytes than is available returns None
-        assert_eq!(get_start_index(&FromTail(2), 1), None);
+        assert_eq!(get_tail_range(&FromTail(2), 1), None);
 
         // When starting line/byte is less than total lines/bytes,
         // return one less than starting number
-        assert_eq!(get_start_index(&FromTail(1), 10), Some(0));
-        assert_eq!(get_start_index(&FromTail(2), 10), Some(1));
-        assert_eq!(get_start_index(&FromTail(3), 10), Some(2));
+        assert_eq!(get_tail_range(&FromTail(1), 10), Some(9..10));
+        assert_eq!(get_tail_range(&FromTail(2), 10), Some(8..10));
+        assert_eq!(get_tail_range(&FromTail(3), 10), Some(7..10));
 
         // When starting line/byte is negative and less than total,
         // return total - start
-        assert_eq!(get_start_index(&FromTail(1), 10), Some(9));
-        assert_eq!(get_start_index(&FromTail(2), 10), Some(8));
-        assert_eq!(get_start_index(&FromTail(3), 10), Some(7));
+        assert_eq!(get_tail_range(&FromHead(1), 10), Some(1..10));
+        assert_eq!(get_tail_range(&FromHead(2), 10), Some(2..10));
+        assert_eq!(get_tail_range(&FromHead(3), 10), Some(3..10));
 
         // When the starting line/byte is negative and more than the total,
         // return 0 to print the whole file
-        assert_eq!(get_start_index(&FromTail(20), 10), Some(0));
+        assert_eq!(get_tail_range(&FromTail(20), 10), Some(0..10));
     }
 
     #[test]
