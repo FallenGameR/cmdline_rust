@@ -20,9 +20,7 @@ enum Position {
 }
 
 fn count_bytes(path: &str) -> Result<usize> {
-    let meta = std::fs::metadata(path)?;
-    let bytes: usize = meta.len().try_into()?;
-    Ok(bytes)
+    Ok(std::fs::metadata(path)?.len().try_into()?)
 }
 
 fn count_lines(path: &str) -> Result<usize> {
