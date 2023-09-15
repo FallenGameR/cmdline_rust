@@ -247,37 +247,33 @@ mod tests {
 
     #[test]
     fn test_parse_tail_value() {
-        // All integers should be interpreted as negative numbers
+        // These tests are formulated to be backward compatible with the original tail spec
+        // They convert from ambigious spec to indexes range
+
         let res = parse_tail_value("3");
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), FromTail(3));
 
-        // A leading "+" should result in a positive number
-        let res = parse_tail_value("+3");
-        assert!(res.is_ok());
-        assert_eq!(res.unwrap(), FromHead(2));
-
-        // An explicit "-" value should result in a negative number
         let res = parse_tail_value("-3");
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), FromTail(3));
 
-        // Zero is zero
+        let res = parse_tail_value("+3");
+        assert!(res.is_ok());
+        assert_eq!(res.unwrap(), FromHead(2));
+
         let res = parse_tail_value("0");
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), FromTail(0));
 
-        // Plus zero is special
         let res = parse_tail_value("+0");
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), FromHead(0));
 
-        // A floating-point value is invalid
         let res = parse_tail_value("3.14");
         assert!(res.is_err());
         assert_eq!(res.unwrap_err().to_string(), "invalid digit found in string");
 
-        // Any non-integer string is invalid
         let res = parse_tail_value("foo");
         assert!(res.is_err());
         assert_eq!(res.unwrap_err().to_string(), "invalid digit found in string");
