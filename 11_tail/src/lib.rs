@@ -2,9 +2,6 @@ use anyhow::Result;
 use clap::{arg, Command};
 use std::{io::{BufReader, Read, Write}, fs::File, ops::Range};
 
-const PAGE_SIZE: usize = 4096;
-const BUFFER_SIZE: usize = PAGE_SIZE * 2;
-
 #[derive(Debug)]
 pub struct Config {
     files: Vec<String>,
@@ -15,8 +12,8 @@ pub struct Config {
 
 #[derive(Debug, Clone, PartialEq)]
 enum Position {
-    FromTail(usize), //  1, -1, 0, -0
-    FromHead(usize), // +1, +0
+    FromTail(usize), //  1, -1, 0, -0 are valid inputs and represent indexes from the end
+    FromHead(usize), // +2, +1, +0 are valid inputs but we have to substract one before storing them to store is as index from start
 }
 
 pub fn get_args() -> Result<Config> {
@@ -79,46 +76,98 @@ pub fn run(config: Config) -> Result<()> {
     Ok(())
 }
 
+fn print_tail(file: &str, position: &Position, total: Total) -> Result<()> {
+    // Variables that are different for printing the tail for line or bytes
+    let (size, name, filter): (_,_, &dyn Fn(u8) -> bool) = match total {
+        Total::Bytes(bytes) => (bytes, "byte", &|_| true),
+        Total::Lines(lines) => (lines, "line", &|b| b == b'\n'),
+    };
+
+    // Print error for invalid positions but don't terminate the program
+    let Some(range) = get_tail_range(position, size) else {
+        eprintln!("{position:?}: invalid {name} position for file {file}");
+        return Ok(());
+    };
+
+    // Helper variables
+    let mut skipped = 0;
+    let mut taken = 0;
+
+    // Rewinding the byte streem to the needed position and taking the needed elements
+    let bytes = BufReader::new(File::open(file)?)
+        .bytes()
+        .filter_map(Result::ok)
+        .skip_while(|&b| {
+            if skipped == range.start {
+                return false;
+            }
+
+            if filter(b) {
+                skipped += 1;
+            }
+
+            return true;
+        })
+        .take_while(|&b| {
+            if taken == range.len() {
+                return false;
+            }
+
+            if filter(b) {
+                taken += 1;
+            }
+
+            return true;
+        })
+        .collect::<Vec<u8>>();
+
+    let mut stdout = std::io::stdout();
+    stdout.write_all(bytes.as_slice())?;
+    stdout.flush()?;
+
+    Ok(())
+}
+
 fn print_lines(file: &str, position: &Position, total_lines: usize) -> Result<()> {
     let Some(range) = get_tail_range(position, total_lines) else {
         eprintln!("{position:?}: invalid line position for file {file}");
         return Ok(());
     };
 
-    if range.is_empty() {
-        return Ok(());
-    }
-
     let mut skipped = 0;
     let mut taken = 0;
 
-    let bytes = BufReader::new(File::open(file)?).bytes();
-    let skip = bytes.filter_map(Result::ok).skip_while(|&b| {
-        if skipped == range.start {
-            return false;
-        }
+    let filter: &dyn Fn(u8) -> bool = &|b| b == b'\n';
 
-        if b == b'\n' {
-            skipped += 1;
-        }
+    let bytes = BufReader::new(File::open(file)?)
+        .bytes()
+        .filter_map(Result::ok)
+        .skip_while(|&b| {
+            if skipped == range.start {
+                return false;
+            }
 
-        return true;
-    });
-    let take = skip.take_while(|&b| {
-        if taken == range.len() {
-            return false;
-        }
+            if filter(b) {
+                skipped += 1;
+            }
 
-        if b == b'\n' {
-            taken += 1;
-        }
+            return true;
+        })
+        .take_while(|&b| {
+            if taken == range.len() {
+                return false;
+            }
 
-        return true;
-    });
+            if filter(b) {
+                taken += 1;
+            }
 
-    let buffer = take.collect::<Vec<u8>>();
+            return true;
+        })
+        .collect::<Vec<u8>>();
+
     let mut stdout = std::io::stdout();
-    stdout.write_all(buffer.as_slice())?;
+    stdout.write_all(bytes.as_slice())?;
     stdout.flush()?;
 
     Ok(())
@@ -130,15 +179,12 @@ fn print_bytes(file: &str, position: &Position, total_bytes: usize) -> Result<()
         return Ok(());
     };
 
-    if range.is_empty() {
-        return Ok(());
-    }
-
     let bytes = BufReader::new(File::open(file)?)
         .bytes()
+        .filter_map(Result::ok)
         .skip(range.start)
         .take(range.end - range.start)
-        .collect::<Result<Vec<u8>, std::io::Error>>()?;
+        .collect::<Vec<u8>>();
 
     let mut stdout = std::io::stdout();
     stdout.write_all(bytes.as_slice())?;
@@ -147,24 +193,21 @@ fn print_bytes(file: &str, position: &Position, total_bytes: usize) -> Result<()
     Ok(())
 }
 
+#[derive(Debug)]
+enum Total {
+    Bytes(usize),
+    Lines(usize),
+}
+
 fn count_bytes(path: &str) -> Result<usize> {
     Ok(std::fs::metadata(path)?.len().try_into()?)
 }
 
 fn count_lines(path: &str) -> Result<usize> {
-    let file = File::open(path)?;
-    let mut buffer = [0; BUFFER_SIZE];
-    let mut reader = BufReader::new(file);
-    let mut lines = 0;
-
-    loop {
-        let len = reader.read(&mut buffer)?;
-        if len == 0 {
-            break;
-        }
-
-        lines += buffer[0..len].iter().filter(|&&b| b == b'\n').count();
-    }
+    let lines = File::open(path)?
+        .bytes()
+        .filter_map(Result::ok)
+        .fold(0, |a, c| a + (c == b'\n') as usize);
 
     Ok(lines)
 }
@@ -182,7 +225,6 @@ fn get_tail_range(position: &Position, total: usize) -> Option<Range<usize>> {
         Position::FromTail(elements) => total.saturating_sub(*elements),
     };
 
-    // offset == total could be when it's an empty file
     if offset >= total { None } else { Some(offset..total) }
 }
 
