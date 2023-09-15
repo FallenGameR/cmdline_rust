@@ -84,8 +84,11 @@ fn parse_tail_value(text: &str) -> Result<Position> {
 }
 
 pub fn run(config: Config) -> Result<()> {
+    let is_multifile = config.files.len() > 1 && !config.quiet;
+    let mut files_processed = 0;
+
     for file in &config.files {
-        if config.files.len() > 1 && !config.quiet {
+        if is_multifile {
             println!("==> {file} <==");
         }
 
@@ -93,6 +96,12 @@ pub fn run(config: Config) -> Result<()> {
         match config.bytes.as_ref() {
             Some(bytes) => print_bytes(file, &bytes, total.bytes)?,
             None => print_lines(file, &config.lines, total.lines)?,
+        }
+
+        files_processed += 1;
+        let is_last_file = files_processed == config.files.len();
+        if is_multifile && !is_last_file {
+            println!();
         }
     }
 
