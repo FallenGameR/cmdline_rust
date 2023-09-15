@@ -48,7 +48,7 @@ pub fn get_args() -> Result<Config> {
 
 fn parse_tail_value(text: &str) -> Result<Position> {
     match text.parse::<i64>() {
-        Ok(value) if text.starts_with('+') => Ok(Position::FromHead(value.try_into()?)),
+        Ok(value) if text.starts_with('+') => Ok(Position::FromHead(TryInto::<usize>::try_into(value)?.saturating_sub(1))),
         Ok(value) if value < 0 => Ok(Position::FromTail((-value).try_into()?)),
         Ok(value) => Ok(Position::FromTail(value.try_into()?)),
         Err(error) => Err(error.into()),
@@ -255,7 +255,7 @@ mod tests {
         // A leading "+" should result in a positive number
         let res = parse_tail_value("+3");
         assert!(res.is_ok());
-        assert_eq!(res.unwrap(), FromHead(3));
+        assert_eq!(res.unwrap(), FromHead(2));
 
         // An explicit "-" value should result in a negative number
         let res = parse_tail_value("-3");
