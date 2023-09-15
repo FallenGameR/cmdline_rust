@@ -175,17 +175,17 @@ mod tests {
     #[test]
     fn test_get_tail_range() {
         // +0 from an empty file (0 lines/bytes) returns None
-        assert_eq!(get_tail_range(&FromHead(0), 0), None);
+        assert_eq!(get_tail_range(&FromHead(0), 0), Some(0..0));
 
         // +0 from a nonempty file returns an index that
         // is one less than the number of lines/bytes
         assert_eq!(get_tail_range(&FromHead(0), 1), Some(0..1));
 
         // Taking 0 lines/bytes returns None
-        assert_eq!(get_tail_range(&FromTail(0), 1), None);
+        assert_eq!(get_tail_range(&FromTail(0), 1), Some(1..1));
 
         // Taking any lines/bytes from an empty file returns None
-        assert_eq!(get_tail_range(&FromTail(1), 0), None);
+        assert_eq!(get_tail_range(&FromTail(1), 0), Some(0..0));
 
         // When starting line/byte is less than total lines/bytes,
         // return one less than starting number
