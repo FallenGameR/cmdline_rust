@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 use clap::{arg, Command};
-use std::{io::{BufRead, BufReader, Read}, fs::File, ops::Range};
+use std::{io::{BufReader, Read}, fs::File, ops::Range};
 
 const PAGE_SIZE: usize = 4096;
 const BUFFER_SIZE: usize = PAGE_SIZE * 2;
@@ -88,10 +88,35 @@ fn print_lines(file: &str, position: &Position, total_lines: usize) -> Result<()
         return Ok(());
     }
 
-    let lines = BufReader::new(File::open(file)?).lines();
-    for line in lines.skip(range.start).take(range.end - range.start) {
-        println!("{}", line?);
-    }
+    let mut skipped = 0;
+    let mut taken = 0;
+
+    let bytes = BufReader::new(File::open(file)?).bytes();
+    let skip = bytes.filter_map(Result::ok).skip_while(|&b| {
+        if skipped == range.start {
+            return false;
+        }
+
+        if b == b'\n' {
+            skipped += 1;
+        }
+
+        return true;
+    });
+    let take = skip.take_while(|&b| {
+        if taken == range.len() {
+            return false;
+        }
+
+        if b == b'\n' {
+            taken += 1;
+        }
+
+        return true;
+    });
+
+    let buffer = take.collect::<Vec<u8>>();
+    print!("{}", String::from_utf8_lossy(&buffer));
 
     Ok(())
 }
