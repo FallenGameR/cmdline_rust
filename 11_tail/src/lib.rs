@@ -62,8 +62,8 @@ pub fn run(config: Config) -> Result<()> {
         }
 
         match config.bytes.as_ref() {
-            Some(bytes) => print_bytes(file, &bytes, count_bytes(&file)?)?,
-            None => print_lines(file, &config.lines, count_lines(&file)?)?,
+            Some(bytes) => print_tail(file, &bytes, Total::Bytes(count_bytes(&file)?))?,
+            None => print_tail(file, &config.lines, Total::Lines(count_lines(&file)?))?,
         }
 
         files_processed += 1;
@@ -119,71 +119,6 @@ fn print_tail(file: &str, position: &Position, total: Total) -> Result<()> {
 
             return true;
         })
-        .collect::<Vec<u8>>();
-
-    let mut stdout = std::io::stdout();
-    stdout.write_all(bytes.as_slice())?;
-    stdout.flush()?;
-
-    Ok(())
-}
-
-fn print_lines(file: &str, position: &Position, total_lines: usize) -> Result<()> {
-    let Some(range) = get_tail_range(position, total_lines) else {
-        eprintln!("{position:?}: invalid line position for file {file}");
-        return Ok(());
-    };
-
-    let mut skipped = 0;
-    let mut taken = 0;
-
-    let filter: &dyn Fn(u8) -> bool = &|b| b == b'\n';
-
-    let bytes = BufReader::new(File::open(file)?)
-        .bytes()
-        .filter_map(Result::ok)
-        .skip_while(|&b| {
-            if skipped == range.start {
-                return false;
-            }
-
-            if filter(b) {
-                skipped += 1;
-            }
-
-            return true;
-        })
-        .take_while(|&b| {
-            if taken == range.len() {
-                return false;
-            }
-
-            if filter(b) {
-                taken += 1;
-            }
-
-            return true;
-        })
-        .collect::<Vec<u8>>();
-
-    let mut stdout = std::io::stdout();
-    stdout.write_all(bytes.as_slice())?;
-    stdout.flush()?;
-
-    Ok(())
-}
-
-fn print_bytes(file: &str, position: &Position, total_bytes: usize) -> Result<()> {
-    let Some(range) = get_tail_range(position, total_bytes) else {
-        eprintln!("{position:?}: invalid byte position for file {file}");
-        return Ok(());
-    };
-
-    let bytes = BufReader::new(File::open(file)?)
-        .bytes()
-        .filter_map(Result::ok)
-        .skip(range.start)
-        .take(range.end - range.start)
         .collect::<Vec<u8>>();
 
     let mut stdout = std::io::stdout();
