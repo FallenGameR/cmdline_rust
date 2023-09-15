@@ -127,6 +127,8 @@ fn count_bytes(path: &str) -> Result<usize> {
     Ok(std::fs::metadata(path)?.len().try_into()?)
 }
 
+// TODO: is it fast? if yes we can find byte offset of a needed line
+// is it faster to read via an explict buffer or this version is bufferen already?
 fn count_lines(path: &str) -> Result<usize> {
     let lines = File::open(path)?
         .bytes()
