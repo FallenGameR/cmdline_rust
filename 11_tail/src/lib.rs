@@ -19,32 +19,28 @@ enum Position {
     FromHead(usize), // +1, +0
 }
 
-#[derive(Debug, PartialEq)]
-struct Total {
-    lines: usize,
-    bytes: usize,
+fn count_bytes(path: &str) -> Result<usize> {
+    let meta = std::fs::metadata(path)?;
+    let bytes: usize = meta.len().try_into()?;
+    Ok(bytes)
 }
 
-impl Total {
-    fn count(path: &str) -> Result<Total> {
-        let file = File::open(path)?;
-        let mut buffer = [0; BUFFER_SIZE];
-        let mut reader = BufReader::new(file);
-        let mut lines = 0;
-        let mut bytes = 0;
+fn count_lines(path: &str) -> Result<usize> {
+    let file = File::open(path)?;
+    let mut buffer = [0; BUFFER_SIZE];
+    let mut reader = BufReader::new(file);
+    let mut lines = 0;
 
-        loop {
-            let len = reader.read(&mut buffer)?;
-            if len == 0 {
-                break;
-            }
-
-            lines += buffer[0..len].iter().filter(|&&b| b == b'\n').count();
-            bytes += len;
+    loop {
+        let len = reader.read(&mut buffer)?;
+        if len == 0 {
+            break;
         }
 
-        Ok(Total{ lines, bytes })
+        lines += buffer[0..len].iter().filter(|&&b| b == b'\n').count();
     }
+
+    Ok(lines)
 }
 
 pub fn get_args() -> Result<Config> {
@@ -92,10 +88,9 @@ pub fn run(config: Config) -> Result<()> {
             println!("==> {file} <==");
         }
 
-        let total = Total::count(&file)?;
         match config.bytes.as_ref() {
-            Some(bytes) => print_bytes(file, &bytes, total.bytes)?,
-            None => print_lines(file, &config.lines, total.lines)?,
+            Some(bytes) => print_bytes(file, &bytes, count_bytes(&file)?)?,
+            None => print_lines(file, &config.lines, count_lines(&file)?)?,
         }
 
         files_processed += 1;
@@ -149,13 +144,14 @@ fn get_tail_range(position: &Position, total: usize) -> Option<Range<usize>> {
         Position::FromTail(elements) => total.saturating_sub(*elements),
     };
 
+    // offset == total could be when it's an empty file
     if offset > total { None } else { Some(offset..total) }
 }
 
 // --------------------------------------------------
 #[cfg(test)]
 mod tests {
-    use crate::Total;
+    use crate::{count_bytes, count_lines};
 
     use super::{
         get_tail_range, parse_tail_value, Position::*,
@@ -163,13 +159,21 @@ mod tests {
 
     #[test]
     fn test_count_lines_bytes() {
-        let res = Total::count("tests/inputs/one.txt");
+        let res = count_bytes("tests/inputs/one.txt");
         assert!(res.is_ok());
-        assert_eq!(res.unwrap(), Total{ lines: 1, bytes: 24 });
+        assert_eq!(res.unwrap(), 24);
 
-        let res = Total::count("tests/inputs/ten.txt");
+        let res = count_lines("tests/inputs/one.txt");
         assert!(res.is_ok());
-        assert_eq!(res.unwrap(), Total{ lines: 10, bytes: 49 });
+        assert_eq!(res.unwrap(), 1);
+
+        let res = count_bytes("tests/inputs/ten.txt");
+        assert!(res.is_ok());
+        assert_eq!(res.unwrap(), 49);
+
+        let res = count_lines("tests/inputs/ten.txt");
+        assert!(res.is_ok());
+        assert_eq!(res.unwrap(), 10);
     }
 
     #[test]
