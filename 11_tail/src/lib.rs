@@ -140,7 +140,7 @@ fn get_tail_range(position: &Position, total: usize) -> Option<Range<usize>> {
         Position::FromTail(elements) => total.saturating_sub(*elements),
     };
 
-    if offset >= total { None } else { Some(offset..total) }
+    if offset > total { None } else { Some(offset..total) }
 }
 
 // --------------------------------------------------

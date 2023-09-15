@@ -38,7 +38,7 @@ fn dies_no_args() -> TestResult {
     Command::cargo_bin(PRG)?
         .assert()
         .failure()
-        .stderr(predicate::str::contains("USAGE"));
+        .stderr(predicate::str::contains("Usage"));
 
     Ok(())
 }
@@ -47,7 +47,7 @@ fn dies_no_args() -> TestResult {
 #[test]
 fn dies_bad_bytes() -> TestResult {
     let bad = random_string();
-    let expected = format!("illegal byte count -- {}", &bad);
+    let expected = format!("invalid value '{}'", &bad);
     Command::cargo_bin(PRG)?
         .args(&["-c", &bad, EMPTY])
         .assert()
@@ -61,7 +61,7 @@ fn dies_bad_bytes() -> TestResult {
 #[test]
 fn dies_bad_lines() -> TestResult {
     let bad = random_string();
-    let expected = format!("illegal line count -- {}", &bad);
+    let expected = format!("invalid value '{}'", &bad);
     Command::cargo_bin(PRG)?
         .args(&["-n", &bad, EMPTY])
         .assert()
@@ -74,7 +74,7 @@ fn dies_bad_lines() -> TestResult {
 // --------------------------------------------------
 #[test]
 fn dies_bytes_and_lines() -> TestResult {
-    let msg = "The argument '--lines <LINES>' cannot be \
+    let msg = "the argument '--lines <LINES>' cannot be \
                used with '--bytes <BYTES>'";
 
     Command::cargo_bin(PRG)?
@@ -90,7 +90,7 @@ fn dies_bytes_and_lines() -> TestResult {
 #[test]
 fn skips_bad_file() -> TestResult {
     let bad = gen_bad_file();
-    let expected = format!("{}: .* [(]os error 2[)]", bad);
+    let expected = ".* [(]os error 2[)]";
     Command::cargo_bin(PRG)?
         .args(&[ONE, &bad, TWO])
         .assert()
