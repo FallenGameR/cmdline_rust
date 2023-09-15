@@ -113,8 +113,8 @@ fn run(args: &[&str], expected_file: &str) -> TestResult {
     let output = assert.get_output();
     let stdout = &output.stdout;
 
-    dbg!(stdout);
-    dbg!(String::from_utf8_lossy(stdout));
+    dbg!(String::from_utf8_lossy(&expected));
+    dbg!(String::from_utf8_lossy(&stdout));
     assert_eq!(&expected, stdout);
 
     Ok(())
