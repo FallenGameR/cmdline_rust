@@ -19,28 +19,6 @@ enum Position {
     FromHead(usize), // +1, +0
 }
 
-fn count_bytes(path: &str) -> Result<usize> {
-    Ok(std::fs::metadata(path)?.len().try_into()?)
-}
-
-fn count_lines(path: &str) -> Result<usize> {
-    let file = File::open(path)?;
-    let mut buffer = [0; BUFFER_SIZE];
-    let mut reader = BufReader::new(file);
-    let mut lines = 0;
-
-    loop {
-        let len = reader.read(&mut buffer)?;
-        if len == 0 {
-            break;
-        }
-
-        lines += buffer[0..len].iter().filter(|&&b| b == b'\n').count();
-    }
-
-    Ok(lines)
-}
-
 pub fn get_args() -> Result<Config> {
     // CLI arguments
     let mut matches = Command::new("tail")
@@ -106,6 +84,10 @@ fn print_lines(file: &str, position: &Position, total_lines: usize) -> Result<()
         return Err(anyhow!("{position:?}: invalid line position for file {file}"));
     };
 
+    if range.is_empty() {
+        return Ok(());
+    }
+
     let lines = BufReader::new(File::open(file)?).lines();
     for line in lines.skip(range.start).take(range.end - range.start) {
         println!("{}", line?);
@@ -119,6 +101,10 @@ fn print_bytes(file: &str, position: &Position, total_bytes: usize) -> Result<()
         return Err(anyhow!("{position:?}: invalid byte position for file {file}"));
     };
 
+    if range.is_empty() {
+        return Ok(());
+    }
+
     let bytes = BufReader::new(File::open(file)?)
         .bytes()
         .skip(range.start)
@@ -127,6 +113,28 @@ fn print_bytes(file: &str, position: &Position, total_bytes: usize) -> Result<()
     print!("{}", String::from_utf8_lossy(&bytes));
 
     Ok(())
+}
+
+fn count_bytes(path: &str) -> Result<usize> {
+    Ok(std::fs::metadata(path)?.len().try_into()?)
+}
+
+fn count_lines(path: &str) -> Result<usize> {
+    let file = File::open(path)?;
+    let mut buffer = [0; BUFFER_SIZE];
+    let mut reader = BufReader::new(file);
+    let mut lines = 0;
+
+    loop {
+        let len = reader.read(&mut buffer)?;
+        if len == 0 {
+            break;
+        }
+
+        lines += buffer[0..len].iter().filter(|&&b| b == b'\n').count();
+    }
+
+    Ok(lines)
 }
 
 // indexes  01234
