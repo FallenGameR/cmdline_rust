@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 use clap::{arg, Command};
-use std::{io::{BufReader, Read}, fs::File, ops::Range};
+use std::{io::{BufReader, Read, Write}, fs::File, ops::Range};
 
 const PAGE_SIZE: usize = 4096;
 const BUFFER_SIZE: usize = PAGE_SIZE * 2;
@@ -116,7 +116,9 @@ fn print_lines(file: &str, position: &Position, total_lines: usize) -> Result<()
     });
 
     let buffer = take.collect::<Vec<u8>>();
-    print!("{}", String::from_utf8_lossy(&buffer));
+    let mut stdout = std::io::stdout();
+    stdout.write_all(buffer.as_slice())?;
+    stdout.flush()?;
 
     Ok(())
 }
@@ -135,7 +137,10 @@ fn print_bytes(file: &str, position: &Position, total_bytes: usize) -> Result<()
         .skip(range.start)
         .take(range.end - range.start)
         .collect::<Result<Vec<u8>, std::io::Error>>()?;
-    print!("{}", String::from_utf8_lossy(&bytes));
+
+    let mut stdout = std::io::stdout();
+    stdout.write_all(bytes.as_slice())?;
+    stdout.flush()?;
 
     Ok(())
 }

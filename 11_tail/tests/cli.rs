@@ -103,14 +103,19 @@ fn skips_bad_file() -> TestResult {
 fn run(args: &[&str], expected_file: &str) -> TestResult {
     // Extra work here due to lossy UTF
     let mut file = File::open(expected_file)?;
-    let mut buffer = Vec::new();
-    file.read_to_end(&mut buffer)?;
-    let expected = String::from_utf8_lossy(&buffer);
+    let mut expected = Vec::new();
+    file.read_to_end(&mut expected)?;
 
-    Command::cargo_bin(PRG)?
+    let assert = Command::cargo_bin(PRG)?
         .args(args)
-        .assert()
-        .stdout(predicate::eq(expected.as_bytes() as &[u8]));
+        .assert();
+
+    let output = assert.get_output();
+    let stdout = &output.stdout;
+
+    dbg!(stdout);
+    dbg!(String::from_utf8_lossy(stdout));
+    assert_eq!(&expected, stdout);
 
     Ok(())
 }
