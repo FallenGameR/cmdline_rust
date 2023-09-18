@@ -59,23 +59,17 @@ fn parse_position(text: &str) -> Result<Position> {
 }
 
 pub fn run(config: Config) -> Result<()> {
-    let is_multifile = config.files.len() > 1 && !config.quiet;
-    let mut files_processed = 0;
+    let is_header_needed = config.files.len() > 1 && !config.quiet;
 
-    for file in &config.files {
-        if is_multifile {
-            println!("==> {file} <==");
+    for (index, file) in config.files.iter().enumerate() {
+        if is_header_needed {
+            let spacer = if index > 0 { "\n" } else { "" };
+            println!("{spacer}==> {file} <==");
         }
 
         match config.bytes.as_ref() {
             Some(bytes) => print_tail(file, &bytes, Total::Bytes(count_bytes(&file)?))?,
             None => print_tail(file, &config.lines, Total::Lines(count_lines(&file)?))?,
-        }
-
-        files_processed += 1;
-        let is_last_file = files_processed == config.files.len();
-        if is_multifile && !is_last_file {
-            println!();
         }
     }
 
