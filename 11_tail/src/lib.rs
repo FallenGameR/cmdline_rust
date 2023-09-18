@@ -129,8 +129,8 @@ fn count_bytes(path: &str) -> Result<usize> {
 
 // TODO: is it fast? if yes we can find byte offset of a needed line
 // is it faster to read via an explict buffer or this version is bufferen already?
-fn count_lines(path: &str) -> Result<usize> {
-    let lines = File::open(path)?
+pub fn count_lines(path: &str) -> Result<usize> {
+    let lines = BufReader::new(File::open(path)?)
         .bytes()
         .filter_map(Result::ok)
         .fold(0, |a, c| a + (c == b'\n') as usize);
