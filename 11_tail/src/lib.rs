@@ -127,13 +127,23 @@ fn count_bytes(path: &str) -> Result<usize> {
     Ok(std::fs::metadata(path)?.len().try_into()?)
 }
 
-// TODO: is it fast? if yes we can find byte offset of a needed line
-// is it faster to read via an explict buffer or this version is bufferen already?
 pub fn count_lines(path: &str) -> Result<usize> {
+    // This version is slower 0.44s only in (debug)
+    // release performance is the same 0.15s (release)
+    // Buffered read make a huge difference
     let lines = BufReader::new(File::open(path)?)
         .bytes()
         .filter_map(Result::ok)
         .fold(0, |a, c| a + (c == b'\n') as usize);
+
+    // This version is faster only in debug 0.37s (debug)
+    //let mut lines = 0;
+    //for byte in BufReader::new(File::open(path)?).bytes() {
+    //    let Ok(byte) = byte else {continue;};
+    //    if byte == b'\n' {
+    //        lines += 1;
+    //    }
+    //}
 
     Ok(lines)
 }
