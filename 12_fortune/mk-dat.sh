@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 DIR="./tests/inputs"
 cd $DIR
