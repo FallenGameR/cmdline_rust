@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use anyhow::Result;
 use clap::{arg, Command};
 use regex::{Regex, RegexBuilder};
@@ -7,6 +9,12 @@ pub struct Config {
     files: Vec<String>,
     regex: Option<Regex>,
     random_seed: Option<u64>,
+}
+
+#[derive(Debug)]
+pub struct Fortune {
+    file: String,
+    text: String,
 }
 
 pub fn get_args() -> Result<Config> {
@@ -64,87 +72,127 @@ pub fn run(config: Config) -> Result<()> {
     Ok(())
 }
 
-/*
-
-// To make it faster we need to read from the end of the file and use IoSlice for output
-// Or use File::seek =)
-fn print_tail(file: &str, position: &Position, total: Total) -> Result<()> {
-    // Variables that are different for printing the tail for line or bytes
-    let (size, name, filter): (_,_, &dyn Fn(u8) -> bool) = match total {
-        Total::Bytes(bytes) => (bytes, "byte", &|_| true),
-        Total::Lines(lines) => (lines, "line", &|b| b == b'\n'),
-    };
-
-    // Print error for invalid positions but don't terminate the program
-    let Some(offset) = get_offset(position, size) else {
-        eprintln!("{position:?}: invalid {name} position for file {file}");
-        return Ok(());
-    };
-
-    // Rewinding the byte streem to the needed position and take till the end
-    let mut skipped = 0;
-    let bytes = BufReader::new(File::open(file)?)
-    .bytes()
-    .filter_map(Result::ok)
-    .skip_while(|&b| {
-        if skipped == offset {
-            return false;
-        }
-
-        if filter(b) {
-            skipped += 1;
-        }
-
-        return true;
-    })
-    .collect::<Vec<u8>>();
-
-// Output the result to stdout
-let mut stdout = std::io::stdout();
-stdout.write_all(bytes.as_slice())?;
-stdout.flush()?;
-
-Ok(())
+fn find_files(_paths: &[String]) -> Result<Vec<PathBuf>> {
+    todo!()
 }
 
-fn count_bytes(path: &str) -> Result<usize> {
-    Ok(std::fs::metadata(path)?.len().try_into()?)
+fn pick_fortune(_fortunes: &[Fortune], _seed: Option<u64>) -> Option<String> {
+    todo!()
 }
 
-pub fn count_lines(path: &str) -> Result<usize> {
-    // This version is slower 0.44s only in (debug)
-    // release performance is the same 0.15s (release)
-    // Buffered read make a huge difference
-    let lines = BufReader::new(File::open(path)?)
-    .bytes()
-    .filter_map(Result::ok)
-    .fold(0, |a, c| a + (c == b'\n') as usize);
+fn read_fortunes(_paths: &[PathBuf]) -> Result<Vec<Fortune>> {
+    todo!()
+}
 
-// This version is faster only in debug 0.37s (debug)
-//let mut lines = 0;
-//for byte in BufReader::new(File::open(path)?).bytes() {
-    //    let Ok(byte) = byte else {continue;};
-    //    if byte == b'\n' {
-        //        lines += 1;
-        //    }
-        //}
+// --------------------------------------------------
+#[cfg(test)]
+mod tests {
+    use super::{
+        find_files, pick_fortune, read_fortunes, Fortune,
+    };
+    use std::path::PathBuf;
 
-        Ok(lines)
+    #[test]
+    fn test_find_files() {
+        // Verify that the function finds a file known to exist
+        let res = find_files(&["./tests/inputs/jokes".to_string()]);
+        assert!(res.is_ok());
+
+        let files = res.unwrap();
+        assert_eq!(files.len(), 1);
+        assert_eq!(
+            files.get(0).unwrap().to_string_lossy(),
+            "./tests/inputs/jokes"
+        );
+
+        // Fails to find a bad file
+        let res = find_files(&["/path/does/not/exist".to_string()]);
+        assert!(res.is_err());
+
+        // Finds all the input files, excludes ".dat"
+        let res = find_files(&["./tests/inputs".to_string()]);
+        assert!(res.is_ok());
+
+        // Check number and order of files
+        let files = res.unwrap();
+        assert_eq!(files.len(), 5);
+        let first = files.get(0).unwrap().display().to_string();
+        assert!(first.contains("ascii-art"));
+        let last = files.last().unwrap().display().to_string();
+        assert!(last.contains("quotes"));
+
+        // Test for multiple sources, path must be unique and sorted
+        let res = find_files(&[
+            "./tests/inputs/jokes".to_string(),
+            "./tests/inputs/ascii-art".to_string(),
+            "./tests/inputs/jokes".to_string(),
+        ]);
+        assert!(res.is_ok());
+        let files = res.unwrap();
+        assert_eq!(files.len(), 2);
+        if let Some(filename) = files.first().unwrap().file_name() {
+            assert_eq!(filename.to_string_lossy(), "ascii-art".to_string())
+        }
+        if let Some(filename) = files.last().unwrap().file_name() {
+            assert_eq!(filename.to_string_lossy(), "jokes".to_string())
+        }
     }
 
-    // indexes  01234
-    // total    5
-    // position uses 0..=5 and it offset from end or begining
-    // head     0..=4 from what index to start till the end, e.g. 1 results in 1..5
-    // tail     1..=5 how many elements to show from the end, e.g. 1 results in 4..5
-    // in case when position is counted from tail and the range is going to
-    // be more then full file we return range that covers the whole file
-    fn get_offset(position: &Position, total: usize) -> Option<usize> {
-        let offset = match position {
-            Position::FromHead(offset) => *offset,
-            Position::FromTail(elements) => total.saturating_sub(*elements),
-        };
+    #[test]
+    fn test_read_fortunes() {
+        // Parses all the fortunes without a filter
+        let res = read_fortunes(&[PathBuf::from("./tests/inputs/jokes")]);
+        assert!(res.is_ok());
 
-        if offset >= total { None } else { Some(offset) }
+        if let Ok(fortunes) = res {
+            // Correct number and sorting
+            assert_eq!(fortunes.len(), 6);
+            assert_eq!(
+                fortunes.first().unwrap().text,
+                "Q. What do you call a head of lettuce in a shirt and tie?\n\
+                A. Collared greens."
+            );
+            assert_eq!(
+                fortunes.last().unwrap().text,
+                "Q: What do you call a deer wearing an eye patch?\n\
+                A: A bad idea (bad-eye deer)."
+            );
+        }
+
+        // Filters for matching text
+        let res = read_fortunes(&[
+            PathBuf::from("./tests/inputs/jokes"),
+            PathBuf::from("./tests/inputs/quotes"),
+        ]);
+        assert!(res.is_ok());
+        assert_eq!(res.unwrap().len(), 11);
     }
-*/
+
+    #[test]
+    fn test_pick_fortune() {
+        // Create a slice of fortunes
+        let fortunes = &[
+            Fortune {
+                file: "fortunes".to_string(),
+                text: "You cannot achieve the impossible without \
+                      attempting the absurd."
+                    .to_string(),
+            },
+            Fortune {
+                file: "fortunes".to_string(),
+                text: "Assumption is the mother of all screw-ups."
+                    .to_string(),
+            },
+            Fortune {
+                file: "fortunes".to_string(),
+                text: "Neckties strangle clear thinking.".to_string(),
+            },
+        ];
+
+        // Pick a fortune with a seed
+        assert_eq!(
+            pick_fortune(fortunes, Some(1)).unwrap(),
+            "Neckties strangle clear thinking.".to_string()
+        );
+    }
+}
