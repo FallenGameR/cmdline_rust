@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::{arg, Command};
-use regex::Regex;
+use regex::{Regex, RegexBuilder};
 
 #[derive(Debug)]
 pub struct Config {
@@ -18,16 +18,27 @@ pub fn get_args() -> Result<Config> {
         .args([
             arg!(<FILES> ... "Files to process"),
             arg!(-m --match <REGULAR_EXPRESSION> "Fortunes would be matched by this regular expression"),
-            arg!(-s --seed <RANDOM_SEED> "Random seed to use for the random number generator"),
+            arg!(-i --insensitive "Use case insensitive regex matching"),
+            arg!(-s --seed <RANDOM_SEED> "Random seed to use for the random number generator")
+                .value_parser(clap::value_parser!(u64)),
         ])
         .get_matches();
 
+    // Construct regex
+    let pattern = matches.remove_one::<String>("match").map(|text| {
+        RegexBuilder::new(&text)
+            .case_insensitive(matches.get_flag("insensitive"))
+            .build()
+    });
+
     // Construct config
     Ok(Config {
-        files: matches.remove_many("FILES").expect("At least one file must be provided").collect(),
-        lines: matches.remove_one("lines").expect("Default value is provided"),
-        bytes: matches.remove_one("bytes"),
-        quiet: matches.get_flag("quiet"),
+        files: matches
+            .remove_many("FILES")
+            .expect("At least one file must be provided")
+            .collect(),
+        regex: pattern.transpose()?,
+        random_seed: matches.remove_one("seed"),
     })
 }
 
