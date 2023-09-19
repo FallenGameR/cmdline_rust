@@ -5,7 +5,7 @@ use std::fs;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
-const PRG: &str = "fortuner";
+const PRG: &str = "fortune";
 const FORTUNE_DIR: &str = "./tests/inputs";
 const EMPTY_DIR: &str = "./tests/inputs/empty";
 const JOKES: &str = "./tests/inputs/jokes";
