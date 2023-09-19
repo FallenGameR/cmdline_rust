@@ -1,8 +1,8 @@
 use std::path::PathBuf;
-
-use anyhow::Result;
+use anyhow::{Result, bail, anyhow};
 use clap::{arg, Command};
 use regex::{Regex, RegexBuilder};
+use walkdir::{WalkDir, DirEntry};
 
 #[derive(Debug)]
 pub struct Config {
@@ -72,8 +72,26 @@ pub fn run(config: Config) -> Result<()> {
     Ok(())
 }
 
-fn find_files(_paths: &[String]) -> Result<Vec<PathBuf>> {
-    todo!()
+fn find_files(paths: &[String]) -> Result<Vec<PathBuf>> {
+    let mut result = Vec::new();
+
+    // Locate all matching files
+    for path in paths {
+        for entry in WalkDir::new(path) {
+            let entry = entry?;
+
+            // Check that entry is a file and it doesn't have .dat extension
+            if entry.file_type().is_file() && entry.path().extension() != Some("dat".as_ref()) {
+                result.push(entry.into_path());
+            }
+        }
+    }
+
+    // Sort and deduplicate for consistent results
+    result.sort();
+    result.dedup();
+
+    Ok(result)
 }
 
 fn pick_fortune(_fortunes: &[Fortune], _seed: Option<u64>) -> Option<String> {
