@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{path::{PathBuf, Path}, io::{BufRead, BufReader}, fs::File};
 use anyhow::{Result, bail, anyhow};
 use clap::{arg, Command};
 use regex::{Regex, RegexBuilder};
@@ -94,11 +94,40 @@ fn find_files(paths: &[String]) -> Result<Vec<PathBuf>> {
     Ok(result)
 }
 
-fn pick_fortune(_fortunes: &[Fortune], _seed: Option<u64>) -> Option<String> {
-    todo!()
+fn read_fortunes(paths: &[PathBuf]) -> Result<Vec<Fortune>> {
+    let mut result: Vec<Fortune> = Vec::new();
+
+    // Process files
+    for path in paths {
+        let file = BufReader::new(File::open(path)?);
+        let mut buff: Vec<String> = Vec::new();
+
+        // Process lines
+        for line in file.lines() {
+            let line = line?;
+
+            // Processing separators
+            if line.trim() == "%" {
+                if buff.len() > 0 {
+                    result.push(Fortune {
+                        file: path.to_string_lossy().into(),
+                        text: buff.join("\n")
+                    });
+                }
+
+                buff.clear();
+                continue;
+            }
+
+            // Remember line
+            buff.push(line);
+        }
+    }
+
+    Ok(result)
 }
 
-fn read_fortunes(_paths: &[PathBuf]) -> Result<Vec<Fortune>> {
+fn pick_fortune(_fortunes: &[Fortune], _seed: Option<u64>) -> Option<String> {
     todo!()
 }
 
