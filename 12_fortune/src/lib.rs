@@ -1,5 +1,6 @@
 use anyhow::{anyhow, bail, Error, Result};
 use clap::{arg, Command};
+use rand::{SeedableRng, rngs::StdRng, Rng};
 use regex::{Regex, RegexBuilder};
 use std::{
     fs::File,
@@ -130,8 +131,16 @@ fn read_fortunes(paths: &[PathBuf]) -> Result<Vec<Fortune>> {
     Ok(result)
 }
 
-fn pick_fortune(_fortunes: &[Fortune], _seed: Option<u64>) -> Option<String> {
-    todo!()
+fn pick_fortune(fortunes: &[Fortune], seed: Option<u64>) -> Option<String> {
+    // Create a random number generator from the seed
+    let mut random = match seed {
+        Some(seed) => StdRng::seed_from_u64(seed),
+        None => StdRng::from_entropy(),
+    };
+
+    // Pick a random fortune text
+    let random_number: usize = random.gen();
+    fortunes.get(random_number % fortunes.len()).map(|f| f.text.clone())
 }
 
 // --------------------------------------------------
@@ -239,7 +248,7 @@ mod tests {
         // Pick a fortune with a seed
         assert_eq!(
             pick_fortune(fortunes, Some(1)).unwrap(),
-            "Neckties strangle clear thinking.".to_string()
+            "Assumption is the mother of all screw-ups.".to_string()
         );
     }
 }
