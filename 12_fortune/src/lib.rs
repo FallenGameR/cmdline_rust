@@ -1,8 +1,12 @@
-use std::{path::{PathBuf, Path}, io::{BufRead, BufReader}, fs::File};
-use anyhow::{Result, bail, anyhow};
+use anyhow::{anyhow, bail, Error, Result};
 use clap::{arg, Command};
 use regex::{Regex, RegexBuilder};
-use walkdir::{WalkDir, DirEntry};
+use std::{
+    fs::File,
+    io::{BufRead, BufReader},
+    path::{Path, PathBuf},
+};
+use walkdir::{DirEntry, WalkDir};
 
 #[derive(Debug)]
 pub struct Config {
@@ -15,6 +19,15 @@ pub struct Config {
 pub struct Fortune {
     file: String,
     text: String,
+}
+
+impl Fortune {
+    fn new(path: &Path, lines: &[String]) -> Self {
+        Self {
+            file: path.to_string_lossy().into(),
+            text: lines.join("\n"),
+        }
+    }
 }
 
 pub fn get_args() -> Result<Config> {
@@ -95,32 +108,22 @@ fn find_files(paths: &[String]) -> Result<Vec<PathBuf>> {
 }
 
 fn read_fortunes(paths: &[PathBuf]) -> Result<Vec<Fortune>> {
-    let mut result: Vec<Fortune> = Vec::new();
+    let mut result = Vec::new();
+    let mut buff = Vec::new();
 
-    // Process files
     for path in paths {
-        let file = BufReader::new(File::open(path)?);
-        let mut buff: Vec<String> = Vec::new();
-
-        // Process lines
-        for line in file.lines() {
+        for line in BufReader::new(File::open(path)?).lines() {
             let line = line?;
 
-            // Processing separators
-            if line.trim() == "%" {
-                if buff.len() > 0 {
-                    result.push(Fortune {
-                        file: path.to_string_lossy().into(),
-                        text: buff.join("\n")
-                    });
-                }
-
-                buff.clear();
+            if line.trim() != "%" {
+                buff.push(line);
                 continue;
             }
 
-            // Remember line
-            buff.push(line);
+            if !buff.is_empty() {
+                result.push(Fortune::new(path, &buff));
+                buff.clear();
+            }
         }
     }
 
@@ -134,9 +137,7 @@ fn pick_fortune(_fortunes: &[Fortune], _seed: Option<u64>) -> Option<String> {
 // --------------------------------------------------
 #[cfg(test)]
 mod tests {
-    use super::{
-        find_files, pick_fortune, read_fortunes, Fortune,
-    };
+    use super::{find_files, pick_fortune, read_fortunes, Fortune};
     use std::path::PathBuf;
 
     #[test]
@@ -227,8 +228,7 @@ mod tests {
             },
             Fortune {
                 file: "fortunes".to_string(),
-                text: "Assumption is the mother of all screw-ups."
-                    .to_string(),
+                text: "Assumption is the mother of all screw-ups.".to_string(),
             },
             Fortune {
                 file: "fortunes".to_string(),
