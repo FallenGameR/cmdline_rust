@@ -1,4 +1,4 @@
-use anyhow::{anyhow, bail, Error, Result};
+use anyhow::Result;
 use clap::{arg, Command};
 use rand::{SeedableRng, rngs::StdRng, Rng};
 use regex::{Regex, RegexBuilder};
@@ -7,7 +7,7 @@ use std::{
     io::{BufRead, BufReader},
     path::{Path, PathBuf},
 };
-use walkdir::{DirEntry, WalkDir};
+use walkdir::WalkDir;
 
 #[derive(Debug)]
 pub struct Config {
@@ -65,23 +65,11 @@ pub fn get_args() -> Result<Config> {
 }
 
 pub fn run(config: Config) -> Result<()> {
-    dbg!(&config);
+    let paths = find_files(&config.files)?;
+    let fortunes = read_fortunes(&paths)?;
+    let selected = pick_fortune(&fortunes, config.random_seed);
 
-    /*
-    let is_header_needed = config.files.len() > 1 && !config.quiet;
-
-    for (index, file) in config.files.iter().enumerate() {
-        if is_header_needed {
-            let spacer = if index > 0 { "\n" } else { "" };
-            println!("{spacer}==> {file} <==");
-        }
-
-        match config.bytes.as_ref() {
-            Some(bytes) => print_tail(file, &bytes, Total::Bytes(count_bytes(&file)?))?,
-            None => print_tail(file, &config.lines, Total::Lines(count_lines(&file)?))?,
-        }
-    }
-    */
+    println!("{}", selected.unwrap_or_else(|| "No fortune found".to_string()));
 
     Ok(())
 }
