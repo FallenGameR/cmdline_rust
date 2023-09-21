@@ -35,8 +35,12 @@ pub fn get_args() -> Result<Config> {
         .about("Proleptic Gregorian calendar with coloring")
         .args([
             arg!([YEAR] "Year number (1-9999)").value_parser(parse_year),
-            arg!(-m --month <MONTH> "Month name or number (1-12)").value_parser(parse_month),
-            arg!(-y --year "Show whole year"),
+            arg!(-m --month <MONTH> "Month name or number (1-12)")
+                .value_parser(parse_month)
+                .conflicts_with("year"),
+            arg!(-y --year "Show whole current year")
+                .conflicts_with("month")
+                .conflicts_with("YEAR"),
         ])
         .get_matches();
 
