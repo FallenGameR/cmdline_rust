@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::{arg, Command};
-use rand::{SeedableRng, rngs::StdRng, Rng};
+use rand::{rngs::StdRng, Rng, SeedableRng};
 use regex::{Regex, RegexBuilder};
 use std::{
     fs::File,
@@ -24,8 +24,9 @@ pub struct Fortune {
 
 impl Fortune {
     fn new(path: &Path, lines: &[String]) -> Self {
+        let default = "Unknown".to_string();
         Self {
-            file: path.to_string_lossy().into(),
+            file: path.file_name().map_or(default, |n| n.to_string_lossy().into()),
             text: lines.join("\n"),
         }
     }
@@ -67,9 +68,29 @@ pub fn get_args() -> Result<Config> {
 pub fn run(config: Config) -> Result<()> {
     let paths = find_files(&config.files)?;
     let fortunes = read_fortunes(&paths)?;
-    let selected = pick_fortune(&fortunes, config.random_seed);
 
-    println!("{}", selected.unwrap_or_else(|| "No fortune found".to_string()));
+    match config.regex {
+        None => {
+            // Random mode, single quote
+            let default = "No fortune found".to_string();
+            let selected = pick_fortune(&fortunes, config.random_seed).unwrap_or(default);
+            println!("{selected}");
+        }
+        Some(regex) => {
+            // Deterministic mode, multiple quotes
+            let filtered = fortunes.iter().filter(|f| regex.is_match(&f.text));
+            let mut file_name = "";
+
+            for fortune in filtered {
+                if file_name != fortune.file {
+                    file_name = &fortune.file;
+                    eprintln!("({file_name})");
+                }
+                println!("{}", fortune.text);
+                eprintln!("%");
+            }
+        }
+    };
 
     Ok(())
 }
@@ -122,13 +143,15 @@ fn read_fortunes(paths: &[PathBuf]) -> Result<Vec<Fortune>> {
 fn pick_fortune(fortunes: &[Fortune], seed: Option<u64>) -> Option<String> {
     // Create a random number generator from the seed
     let mut random = match seed {
-        Some(seed) => StdRng::seed_from_u64(seed),
         None => StdRng::from_entropy(),
+        Some(seed) => StdRng::seed_from_u64(seed),
     };
 
     // Pick a random fortune text
     let random_number: usize = random.gen();
-    fortunes.get(random_number % fortunes.len()).map(|f| f.text.clone())
+    fortunes
+        .get(random_number % fortunes.len())
+        .map(|f| f.text.clone())
 }
 
 // --------------------------------------------------
