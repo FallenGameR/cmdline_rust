@@ -53,8 +53,3 @@ cargo build --timings
 # Auto fix non-idiomatic errors
 cargo clippy --fix -- --warn clippy::pedantic --allow clippy::missing-errors-doc --allow clippy::missing-panics-doc --allow clippy::needless-pass-by-value 
 ```
-
-no_fortunes_found
-yogi_berra_cap
-yogi_berra_lower
-yogi_berra_lower_i
