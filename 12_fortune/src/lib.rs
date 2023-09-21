@@ -85,9 +85,10 @@ pub fn run(config: Config) -> Result<()> {
                 if file_name != fortune.file {
                     file_name = &fortune.file;
                     eprintln!("({file_name})");
+                    eprintln!("%");
                 }
                 println!("{}", fortune.text);
-                eprintln!("%");
+                println!("%");
             }
         }
     };
