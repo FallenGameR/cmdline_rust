@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::{arg, Command};
-use rand::{rngs::StdRng, SeedableRng, seq::SliceRandom};
+use rand::{rngs::StdRng, seq::SliceRandom, SeedableRng};
 use regex::{Regex, RegexBuilder};
 use std::{
     fs::File,
@@ -26,7 +26,9 @@ impl Fortune {
     fn new(path: &Path, lines: &[String]) -> Self {
         let default = "Unknown".to_string();
         Self {
-            file: path.file_name().map_or(default, |n| n.to_string_lossy().into()),
+            file: path
+                .file_name()
+                .map_or(default, |n| n.to_string_lossy().into()),
             text: lines.join("\n"),
         }
     }
@@ -149,7 +151,7 @@ fn pick_fortune(fortunes: &[Fortune], seed: Option<u64>) -> Option<String> {
     };
 
     // Pick a random fortune text
-    fortunes.choose(& mut random).map(|f| f.text.clone())
+    fortunes.choose(&mut random).map(|f| f.text.clone())
 }
 
 // --------------------------------------------------
