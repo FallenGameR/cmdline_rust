@@ -40,7 +40,7 @@ pub fn get_args() -> Result<Config> {
         .about("Randomly select a text piece from a set of files")
         .args([
             arg!(<FILES> ... "Files to process"),
-            arg!(-m --match <REGULAR_EXPRESSION> "Fortunes would be matched by this regular expression"),
+            arg!(-m --pattern <REGULAR_EXPRESSION> "Fortunes would be matched by this regular expression"),
             arg!(-i --insensitive "Use case insensitive regex matching"),
             arg!(-s --seed <RANDOM_SEED> "Random seed to use for the random number generator")
                 .value_parser(clap::value_parser!(u64)),
@@ -48,7 +48,7 @@ pub fn get_args() -> Result<Config> {
         .get_matches();
 
     // Construct regex
-    let pattern = matches.remove_one::<String>("match").map(|text| {
+    let pattern = matches.remove_one::<String>("pattern").map(|text| {
         RegexBuilder::new(&text)
             .case_insensitive(matches.get_flag("insensitive"))
             .build()
