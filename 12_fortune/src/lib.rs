@@ -72,7 +72,7 @@ pub fn run(config: Config) -> Result<()> {
     match config.regex {
         None => {
             // Random mode, single quote
-            let default = "No fortune found".to_string();
+            let default = "No fortunes found".to_string();
             let selected = pick_fortune(&fortunes, config.random_seed).unwrap_or(default);
             println!("{selected}");
         }
@@ -142,6 +142,11 @@ fn read_fortunes(paths: &[PathBuf]) -> Result<Vec<Fortune>> {
 }
 
 fn pick_fortune(fortunes: &[Fortune], seed: Option<u64>) -> Option<String> {
+    // Handling the case when there are no fortunes
+    if fortunes.is_empty() {
+        return None;
+    }
+
     // Create a random number generator from the seed
     let mut random = match seed {
         None => StdRng::from_entropy(),
@@ -150,9 +155,8 @@ fn pick_fortune(fortunes: &[Fortune], seed: Option<u64>) -> Option<String> {
 
     // Pick a random fortune text
     let random_number: usize = random.gen();
-    fortunes
-        .get(random_number % fortunes.len())
-        .map(|f| f.text.clone())
+    let random_index = random_number % fortunes.len();
+    Some(fortunes[random_index].text.clone())
 }
 
 // --------------------------------------------------
