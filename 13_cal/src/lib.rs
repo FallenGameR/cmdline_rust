@@ -1,18 +1,14 @@
 use anyhow::Result;
 use clap::{arg, Command};
-use rand::{rngs::StdRng, seq::SliceRandom, SeedableRng};
-use regex::{Regex, RegexBuilder};
 use std::{
     fs::File,
     io::{BufRead, BufReader},
     path::{Path, PathBuf},
 };
-use walkdir::WalkDir;
 
 #[derive(Debug)]
 pub struct Config {
     files: Vec<String>,
-    regex: Option<Regex>,
     random_seed: Option<u64>,
 }
 
@@ -49,217 +45,163 @@ pub fn get_args() -> Result<Config> {
         ])
         .get_matches();
 
-    // Construct regex
-    let pattern = matches.remove_one::<String>("pattern").map(|text| {
-        RegexBuilder::new(&text)
-            .case_insensitive(matches.get_flag("insensitive"))
-            .build()
-    });
-
     // Construct config
     Ok(Config {
         files: matches
             .remove_many("FILES")
             .expect("At least one file must be provided")
             .collect(),
-        regex: pattern.transpose()?,
         random_seed: matches.remove_one("seed"),
     })
 }
 
 pub fn run(config: Config) -> Result<()> {
-    let paths = find_files(&config.files)?;
-    let fortunes = read_fortunes(&paths)?;
-
-    match config.regex {
-        None => {
-            // Random mode, single quote
-            let default = "No fortunes found".to_string();
-            let selected = pick_fortune(&fortunes, config.random_seed).unwrap_or(default);
-            println!("{selected}");
-        }
-        Some(regex) => {
-            // Deterministic mode, multiple quotes
-            let filtered = fortunes.iter().filter(|f| regex.is_match(&f.text));
-            let mut file_name = "";
-
-            for fortune in filtered {
-                if file_name != fortune.file {
-                    file_name = &fortune.file;
-                    eprintln!("({file_name})");
-                    eprintln!("%");
-                }
-                println!("{}", fortune.text);
-                println!("%");
-            }
-        }
-    };
-
+    dbg!(config);
     Ok(())
-}
-
-fn find_files(paths: &[String]) -> Result<Vec<PathBuf>> {
-    let mut result = Vec::new();
-
-    // Locate all matching files
-    for path in paths {
-        for entry in WalkDir::new(path) {
-            let entry = entry?;
-
-            // Check that entry is a file and it doesn't have .dat extension
-            if entry.file_type().is_file() && entry.path().extension() != Some("dat".as_ref()) {
-                result.push(entry.into_path());
-            }
-        }
-    }
-
-    // Sort and deduplicate for consistent results
-    result.sort();
-    result.dedup();
-
-    Ok(result)
-}
-
-fn read_fortunes(paths: &[PathBuf]) -> Result<Vec<Fortune>> {
-    let mut result = Vec::new();
-    let mut buff = Vec::new();
-
-    for path in paths {
-        for line in BufReader::new(File::open(path)?).lines() {
-            let line = line?;
-
-            if line.trim() != "%" {
-                buff.push(line);
-                continue;
-            }
-
-            if !buff.is_empty() {
-                result.push(Fortune::new(path, &buff));
-                buff.clear();
-            }
-        }
-    }
-
-    Ok(result)
-}
-
-fn pick_fortune(fortunes: &[Fortune], seed: Option<u64>) -> Option<String> {
-    // Create a random number generator from the seed
-    let mut random = match seed {
-        None => StdRng::from_entropy(),
-        Some(seed) => StdRng::seed_from_u64(seed),
-    };
-
-    // Pick a random fortune text
-    fortunes.choose(&mut random).map(|f| f.text.clone())
 }
 
 // --------------------------------------------------
 #[cfg(test)]
 mod tests {
-    use super::{find_files, pick_fortune, read_fortunes, Fortune};
-    use std::path::PathBuf;
+    use super::{
+        format_month, last_day_in_month, parse_int, parse_month, parse_year,
+    };
+    use chrono::NaiveDate;
 
     #[test]
-    fn test_find_files() {
-        // Verify that the function finds a file known to exist
-        let res = find_files(&["./tests/inputs/jokes".to_string()]);
+    fn test_parse_int() {
+        // Parse positive int as usize
+        let res = parse_int::<usize>("1");
         assert!(res.is_ok());
+        assert_eq!(res.unwrap(), 1usize);
 
-        let files = res.unwrap();
-        assert_eq!(files.len(), 1);
+        // Parse negative int as i32
+        let res = parse_int::<i32>("-1");
+        assert!(res.is_ok());
+        assert_eq!(res.unwrap(), -1i32);
+
+        // Fail on a string
+        let res = parse_int::<i64>("foo");
+        assert!(res.is_err());
+        assert_eq!(res.unwrap_err().to_string(), "Invalid integer \"foo\"");
+    }
+
+    #[test]
+    fn test_parse_year() {
+        let res = parse_year("1");
+        assert!(res.is_ok());
+        assert_eq!(res.unwrap(), 1i32);
+
+        let res = parse_year("9999");
+        assert!(res.is_ok());
+        assert_eq!(res.unwrap(), 9999i32);
+
+        let res = parse_year("0");
+        assert!(res.is_err());
         assert_eq!(
-            files.get(0).unwrap().to_string_lossy(),
-            "./tests/inputs/jokes"
+            res.unwrap_err().to_string(),
+            "year \"0\" not in the range 1 through 9999"
         );
 
-        // Fails to find a bad file
-        let res = find_files(&["/path/does/not/exist".to_string()]);
+        let res = parse_year("10000");
         assert!(res.is_err());
-
-        // Finds all the input files, excludes ".dat"
-        let res = find_files(&["./tests/inputs".to_string()]);
-        assert!(res.is_ok());
-
-        // Check number and order of files
-        let files = res.unwrap();
-        assert_eq!(files.len(), 5);
-        let first = files.get(0).unwrap().display().to_string();
-        assert!(first.contains("ascii-art"));
-        let last = files.last().unwrap().display().to_string();
-        assert!(last.contains("quotes"));
-
-        // Test for multiple sources, path must be unique and sorted
-        let res = find_files(&[
-            "./tests/inputs/jokes".to_string(),
-            "./tests/inputs/ascii-art".to_string(),
-            "./tests/inputs/jokes".to_string(),
-        ]);
-        assert!(res.is_ok());
-        let files = res.unwrap();
-        assert_eq!(files.len(), 2);
-        if let Some(filename) = files.first().unwrap().file_name() {
-            assert_eq!(filename.to_string_lossy(), "ascii-art".to_string());
-        }
-        if let Some(filename) = files.last().unwrap().file_name() {
-            assert_eq!(filename.to_string_lossy(), "jokes".to_string());
-        }
-    }
-
-    #[test]
-    fn test_read_fortunes() {
-        // Parses all the fortunes without a filter
-        let res = read_fortunes(&[PathBuf::from("./tests/inputs/jokes")]);
-        assert!(res.is_ok());
-
-        if let Ok(fortunes) = res {
-            // Correct number and sorting
-            assert_eq!(fortunes.len(), 6);
-            assert_eq!(
-                fortunes.first().unwrap().text,
-                "Q. What do you call a head of lettuce in a shirt and tie?\n\
-                A. Collared greens."
-            );
-            assert_eq!(
-                fortunes.last().unwrap().text,
-                "Q: What do you call a deer wearing an eye patch?\n\
-                A: A bad idea (bad-eye deer)."
-            );
-        }
-
-        // Filters for matching text
-        let res = read_fortunes(&[
-            PathBuf::from("./tests/inputs/jokes"),
-            PathBuf::from("./tests/inputs/quotes"),
-        ]);
-        assert!(res.is_ok());
-        assert_eq!(res.unwrap().len(), 11);
-    }
-
-    #[test]
-    fn test_pick_fortune() {
-        // Create a slice of fortunes
-        let fortunes = &[
-            Fortune {
-                file: "fortunes".to_string(),
-                text: "You cannot achieve the impossible without \
-                      attempting the absurd."
-                    .to_string(),
-            },
-            Fortune {
-                file: "fortunes".to_string(),
-                text: "Assumption is the mother of all screw-ups.".to_string(),
-            },
-            Fortune {
-                file: "fortunes".to_string(),
-                text: "Neckties strangle clear thinking.".to_string(),
-            },
-        ];
-
-        // Pick a fortune with a seed
         assert_eq!(
-            pick_fortune(fortunes, Some(1)).unwrap(),
-            "Neckties strangle clear thinking.".to_string()
+            res.unwrap_err().to_string(),
+            "year \"10000\" not in the range 1 through 9999"
+        );
+
+        let res = parse_year("foo");
+        assert!(res.is_err());
+        assert_eq!(res.unwrap_err().to_string(), "Invalid integer \"foo\"");
+    }
+
+    #[test]
+    fn test_parse_month() {
+        let res = parse_month("1");
+        assert!(res.is_ok());
+        assert_eq!(res.unwrap(), 1u32);
+
+        let res = parse_month("12");
+        assert!(res.is_ok());
+        assert_eq!(res.unwrap(), 12u32);
+
+        let res = parse_month("jan");
+        assert!(res.is_ok());
+        assert_eq!(res.unwrap(), 1u32);
+
+        let res = parse_month("0");
+        assert!(res.is_err());
+        assert_eq!(
+            res.unwrap_err().to_string(),
+            "month \"0\" not in the range 1 through 12"
+        );
+
+        let res = parse_month("13");
+        assert!(res.is_err());
+        assert_eq!(
+            res.unwrap_err().to_string(),
+            "month \"13\" not in the range 1 through 12"
+        );
+
+        let res = parse_month("foo");
+        assert!(res.is_err());
+        assert_eq!(res.unwrap_err().to_string(), "Invalid month \"foo\"");
+    }
+
+    #[test]
+    fn test_format_month() {
+        let today = NaiveDate::from_ymd(0, 1, 1);
+        let leap_february = vec![
+            "   February 2020      ",
+            "Su Mo Tu We Th Fr Sa  ",
+            "                   1  ",
+            " 2  3  4  5  6  7  8  ",
+            " 9 10 11 12 13 14 15  ",
+            "16 17 18 19 20 21 22  ",
+            "23 24 25 26 27 28 29  ",
+            "                      ",
+        ];
+        assert_eq!(format_month(2020, 2, true, today), leap_february);
+
+        let may = vec![
+            "        May           ",
+            "Su Mo Tu We Th Fr Sa  ",
+            "                1  2  ",
+            " 3  4  5  6  7  8  9  ",
+            "10 11 12 13 14 15 16  ",
+            "17 18 19 20 21 22 23  ",
+            "24 25 26 27 28 29 30  ",
+            "31                    ",
+        ];
+        assert_eq!(format_month(2020, 5, false, today), may);
+
+        let april_hl = vec![
+            "     April 2021       ",
+            "Su Mo Tu We Th Fr Sa  ",
+            "             1  2  3  ",
+            " 4  5  6 \u{1b}[7m 7\u{1b}[0m  8  9 10  ",
+            "11 12 13 14 15 16 17  ",
+            "18 19 20 21 22 23 24  ",
+            "25 26 27 28 29 30     ",
+            "                      ",
+        ];
+        let today = NaiveDate::from_ymd(2021, 4, 7);
+        assert_eq!(format_month(2021, 4, true, today), april_hl);
+    }
+
+    #[test]
+    fn test_last_day_in_month() {
+        assert_eq!(
+            last_day_in_month(2020, 1),
+            NaiveDate::from_ymd(2020, 1, 31)
+        );
+        assert_eq!(
+            last_day_in_month(2020, 2),
+            NaiveDate::from_ymd(2020, 2, 29)
+        );
+        assert_eq!(
+            last_day_in_month(2020, 4),
+            NaiveDate::from_ymd(2020, 4, 30)
         );
     }
 }
