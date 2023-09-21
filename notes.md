@@ -53,3 +53,12 @@ cargo build --timings
 # Auto fix non-idiomatic errors
 cargo clippy --fix -- --warn clippy::pedantic --allow clippy::missing-errors-doc --allow clippy::missing-panics-doc --allow clippy::needless-pass-by-value 
 ```
+
+dir_seed_10
+jokes_seed_1
+mark_twain_cap
+mark_twain_lower_i
+no_fortunes_found
+yogi_berra_cap
+yogi_berra_lower
+yogi_berra_lower_i
