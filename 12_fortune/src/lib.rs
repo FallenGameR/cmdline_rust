@@ -204,10 +204,10 @@ mod tests {
         let files = res.unwrap();
         assert_eq!(files.len(), 2);
         if let Some(filename) = files.first().unwrap().file_name() {
-            assert_eq!(filename.to_string_lossy(), "ascii-art".to_string())
+            assert_eq!(filename.to_string_lossy(), "ascii-art".to_string());
         }
         if let Some(filename) = files.last().unwrap().file_name() {
-            assert_eq!(filename.to_string_lossy(), "jokes".to_string())
+            assert_eq!(filename.to_string_lossy(), "jokes".to_string());
         }
     }
 
