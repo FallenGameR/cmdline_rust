@@ -1,35 +1,35 @@
 use anyhow::Result;
-use chrono::NaiveDate;
+use chrono::{Datelike, Local, NaiveDate};
 use clap::{arg, Command};
 
+// Field sizes reflect choises in the chrono crate
 #[derive(Debug)]
 pub struct Config {
-    files: Vec<String>,
-    random_seed: Option<u64>,
+    today: NaiveDate,
+    month: Option<u32>,
+    year: i32,
 }
 
 pub fn get_args() -> Result<Config> {
     // CLI arguments
-    let mut matches = Command::new("fortune")
+    let mut matches = Command::new("cal")
         .version("1.0")
         .author("FallenGameR")
-        .about("Randomly select a text piece from a set of files")
+        .about("Gregorian calendar")
         .args([
-            arg!(<FILES> ... "Files to process"),
-            arg!(-m --pattern <REGULAR_EXPRESSION> "Fortunes would be matched by this regular expression"),
-            arg!(-i --insensitive "Use case insensitive regex matching"),
-            arg!(-s --seed <RANDOM_SEED> "Random seed to use for the random number generator")
-                .value_parser(clap::value_parser!(u64)),
+            arg!([YEAR] "Year number (1-9999)").value_parser(parse_year),
+            arg!(-m --month <MONTH> "Month name or number (1-12)").value_parser(parse_month),
+            arg!(-y --year "Show whole year"),
         ])
         .get_matches();
 
+    let today = Local::now().naive_local();
+
     // Construct config
     Ok(Config {
-        files: matches
-            .remove_many("FILES")
-            .expect("At least one file must be provided")
-            .collect(),
-        random_seed: matches.remove_one("seed"),
+        today: today.date(),
+        month: matches.remove_one("month").or(Some(today.month())),
+        year: matches.remove_one("YEAR").unwrap_or(today.year()),
     })
 }
 
@@ -38,12 +38,7 @@ pub fn run(config: Config) -> Result<()> {
     Ok(())
 }
 
-fn format_month(
-    _year: i32,
-    _month: u32,
-    _print_year: bool,
-    _today: NaiveDate,
-) -> Vec<String> {
+fn format_month(_year: i32, _month: u32, _print_year: bool, _today: NaiveDate) -> Vec<String> {
     todo!()
 }
 
@@ -62,9 +57,7 @@ fn parse_year(_year: &str) -> Result<i32> {
 // --------------------------------------------------
 #[cfg(test)]
 mod tests {
-    use super::{
-        format_month, last_day_in_month, parse_month, parse_year,
-    };
+    use super::{format_month, last_day_in_month, parse_month, parse_year};
     use chrono::NaiveDate;
 
     #[test]
