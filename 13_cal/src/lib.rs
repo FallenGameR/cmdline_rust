@@ -6,16 +6,33 @@ use clap::{arg, Command};
 #[derive(Debug)]
 pub struct Config {
     today: NaiveDate,
-    month: Option<u32>,
+    month: Option<u32>, // when None the whole year is shown
     year: i32,
 }
+
+const LINE_WIDTH: usize = 22;
+
+const MONTH_NAMES: [&str; 12] = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+];
 
 pub fn get_args() -> Result<Config> {
     // CLI arguments
     let mut matches = Command::new("cal")
         .version("1.0")
         .author("FallenGameR")
-        .about("Gregorian calendar")
+        .about("Proleptic Gregorian calendar with coloring")
         .args([
             arg!([YEAR] "Year number (1-9999)").value_parser(parse_year),
             arg!(-m --month <MONTH> "Month name or number (1-12)").value_parser(parse_month),
