@@ -1,33 +1,11 @@
 use anyhow::Result;
+use chrono::NaiveDate;
 use clap::{arg, Command};
-use std::{
-    fs::File,
-    io::{BufRead, BufReader},
-    path::{Path, PathBuf},
-};
 
 #[derive(Debug)]
 pub struct Config {
     files: Vec<String>,
     random_seed: Option<u64>,
-}
-
-#[derive(Debug)]
-pub struct Fortune {
-    file: String,
-    text: String,
-}
-
-impl Fortune {
-    fn new(path: &Path, lines: &[String]) -> Self {
-        let default = "Unknown".to_string();
-        Self {
-            file: path
-                .file_name()
-                .map_or(default, |n| n.to_string_lossy().into()),
-            text: lines.join("\n"),
-        }
-    }
 }
 
 pub fn get_args() -> Result<Config> {
@@ -60,31 +38,34 @@ pub fn run(config: Config) -> Result<()> {
     Ok(())
 }
 
+fn format_month(
+    _year: i32,
+    _month: u32,
+    _print_year: bool,
+    _today: NaiveDate,
+) -> Vec<String> {
+    todo!()
+}
+
+fn last_day_in_month(_year: i32, _month: u32) -> NaiveDate {
+    todo!()
+}
+
+fn parse_month(_month: &str) -> Result<u32> {
+    todo!()
+}
+
+fn parse_year(_year: &str) -> Result<i32> {
+    todo!()
+}
+
 // --------------------------------------------------
 #[cfg(test)]
 mod tests {
     use super::{
-        format_month, last_day_in_month, parse_int, parse_month, parse_year,
+        format_month, last_day_in_month, parse_month, parse_year,
     };
     use chrono::NaiveDate;
-
-    #[test]
-    fn test_parse_int() {
-        // Parse positive int as usize
-        let res = parse_int::<usize>("1");
-        assert!(res.is_ok());
-        assert_eq!(res.unwrap(), 1usize);
-
-        // Parse negative int as i32
-        let res = parse_int::<i32>("-1");
-        assert!(res.is_ok());
-        assert_eq!(res.unwrap(), -1i32);
-
-        // Fail on a string
-        let res = parse_int::<i64>("foo");
-        assert!(res.is_err());
-        assert_eq!(res.unwrap_err().to_string(), "Invalid integer \"foo\"");
-    }
 
     #[test]
     fn test_parse_year() {
@@ -150,7 +131,7 @@ mod tests {
 
     #[test]
     fn test_format_month() {
-        let today = NaiveDate::from_ymd(0, 1, 1);
+        let today = NaiveDate::from_ymd_opt(0, 1, 1).unwrap();
         let leap_february = vec![
             "   February 2020      ",
             "Su Mo Tu We Th Fr Sa  ",
@@ -185,7 +166,7 @@ mod tests {
             "25 26 27 28 29 30     ",
             "                      ",
         ];
-        let today = NaiveDate::from_ymd(2021, 4, 7);
+        let today = NaiveDate::from_ymd_opt(2021, 4, 7).unwrap();
         assert_eq!(format_month(2021, 4, true, today), april_hl);
     }
 
@@ -193,15 +174,15 @@ mod tests {
     fn test_last_day_in_month() {
         assert_eq!(
             last_day_in_month(2020, 1),
-            NaiveDate::from_ymd(2020, 1, 31)
+            NaiveDate::from_ymd_opt(2020, 1, 31).unwrap()
         );
         assert_eq!(
             last_day_in_month(2020, 2),
-            NaiveDate::from_ymd(2020, 2, 29)
+            NaiveDate::from_ymd_opt(2020, 2, 29).unwrap()
         );
         assert_eq!(
             last_day_in_month(2020, 4),
-            NaiveDate::from_ymd(2020, 4, 30)
+            NaiveDate::from_ymd_opt(2020, 4, 30).unwrap()
         );
     }
 }
