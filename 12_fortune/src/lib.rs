@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::{arg, Command};
-use rand::{rngs::StdRng, Rng, SeedableRng};
+use rand::{rngs::StdRng, SeedableRng, seq::SliceRandom};
 use regex::{Regex, RegexBuilder};
 use std::{
     fs::File,
@@ -142,11 +142,6 @@ fn read_fortunes(paths: &[PathBuf]) -> Result<Vec<Fortune>> {
 }
 
 fn pick_fortune(fortunes: &[Fortune], seed: Option<u64>) -> Option<String> {
-    // Handling the case when there are no fortunes
-    if fortunes.is_empty() {
-        return None;
-    }
-
     // Create a random number generator from the seed
     let mut random = match seed {
         None => StdRng::from_entropy(),
@@ -154,9 +149,7 @@ fn pick_fortune(fortunes: &[Fortune], seed: Option<u64>) -> Option<String> {
     };
 
     // Pick a random fortune text
-    let random_number: usize = random.gen();
-    let random_index = random_number % fortunes.len();
-    Some(fortunes[random_index].text.clone())
+    fortunes.choose(& mut random).map(|f| f.text.clone())
 }
 
 // --------------------------------------------------
@@ -264,7 +257,7 @@ mod tests {
         // Pick a fortune with a seed
         assert_eq!(
             pick_fortune(fortunes, Some(1)).unwrap(),
-            "Assumption is the mother of all screw-ups.".to_string()
+            "Neckties strangle clear thinking.".to_string()
         );
     }
 }

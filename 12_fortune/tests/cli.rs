@@ -87,7 +87,7 @@ fn quotes_seed_1() -> TestResult {
 fn jokes_seed_1() -> TestResult {
     run(
         &[JOKES, "-s", "1"],
-        "Q: Why did the gardener quit his job?\nA: His celery wasn't high enough.\n",
+        "Q: What happens when frogs park illegally?\nA: They get toad.\n",
     )
 }
 
@@ -96,9 +96,8 @@ fn jokes_seed_1() -> TestResult {
 fn dir_seed_10() -> TestResult {
     run(
         &[FORTUNE_DIR, "-s", "10"],
-        "A classic is something that everyone wants to have read\n\
-        and nobody wants to read.\n\
-        \t\t-- Mark Twain, \"The Disappearance of Literature\"\n"
+        "Q: Why did the fungus and the alga marry?\n\
+        A: Because they took a lichen to each other!\n"
     )
 }
 
