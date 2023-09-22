@@ -6,8 +6,9 @@ use clap::{arg, Command};
 #[derive(Debug)]
 pub struct Config {
     today: NaiveDate,
-    month: Option<u32>, // when None the whole year is shown
+    month: u32,
     year: i32,
+    show_year: bool,
 }
 
 const LINE_WIDTH: usize = 22;
@@ -32,15 +33,15 @@ pub fn get_args() -> Result<Config> {
     let mut matches = Command::new("cal")
         .version("1.0")
         .author("FallenGameR")
-        .about("Proleptic Gregorian calendar with coloring")
+        .about("Proleptic Gregorian month calendar with coloring")
         .args([
-            arg!([YEAR] "Year number (1-9999)").value_parser(parse_year),
-            arg!(-m --month <MONTH> "Month name or number (1-12)")
-                .value_parser(parse_month)
-                .conflicts_with("year"),
-            arg!(-y --year "Show whole current year")
-                .conflicts_with("month")
-                .conflicts_with("YEAR"),
+            arg!([DATE]... "Year number (1-9999) or month followed by year number")
+                .help_heading("DATE as [[month] year]")
+                .value_parser(parse_date),
+            arg!(-m --month <MONTH> "Month name or number (1-12)\nIs ignored if DATE specifies month")
+                .value_parser(parse_month),
+            arg!(-y --show_year "Show calendar for the whole year")
+                .conflicts_with("month"),
         ])
         .get_matches();
 
@@ -49,12 +50,13 @@ pub fn get_args() -> Result<Config> {
     // Construct config
     Ok(Config {
         today: today.date(),
-        month: matches.remove_one("month").or(Some(today.month())),
-        year: matches.remove_one("YEAR").unwrap_or(today.year()),
+        month: matches.remove_one("month").unwrap_or(today.month()),
+        year: matches.remove_one("DATE").unwrap_or(today.year()),
+        show_year: matches.get_flag("show_year"),
     })
 }
 
-fn parse_year(year: &str) -> Result<i32> {
+fn parse_date(year: &str) -> Result<i32> {
     let year = year.parse::<i32>()?;
     let allowed = 1..=9999;
 
@@ -108,34 +110,34 @@ fn last_day_in_month(_year: i32, _month: u32) -> NaiveDate {
 // --------------------------------------------------
 #[cfg(test)]
 mod tests {
-    use super::{format_month, last_day_in_month, parse_month, parse_year};
+    use super::{format_month, last_day_in_month, parse_month, parse_date};
     use chrono::NaiveDate;
 
     #[test]
     fn test_parse_year() {
-        let res = parse_year("1");
+        let res = parse_date("1");
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), 1i32);
 
-        let res = parse_year("9999");
+        let res = parse_date("9999");
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), 9999i32);
 
-        let res = parse_year("0");
+        let res = parse_date("0");
         assert!(res.is_err());
         assert_eq!(
             res.unwrap_err().to_string(),
             "year 0 not in the range [1,9999]"
         );
 
-        let res = parse_year("10000");
+        let res = parse_date("10000");
         assert!(res.is_err());
         assert_eq!(
             res.unwrap_err().to_string(),
             "year 10000 not in the range [1,9999]"
         );
 
-        let res = parse_year("foo");
+        let res = parse_date("foo");
         assert!(res.is_err());
         assert_eq!(
             res.unwrap_err().to_string(),
