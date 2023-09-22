@@ -1,4 +1,6 @@
-use anyhow::Result;
+use std::ops::RangeBounds;
+
+use anyhow::{bail, Result};
 use chrono::{Datelike, Local, NaiveDate};
 use clap::{arg, Command};
 
@@ -54,6 +56,21 @@ pub fn get_args() -> Result<Config> {
     })
 }
 
+fn parse_year(year: &str) -> Result<i32> {
+    let year = year.parse::<i32>()?;
+    let allowed = 1..=9999;
+
+    if !allowed.contains(&year) {
+        bail!("year {year} not in the range [{},{}]", allowed.start(), allowed.end());
+    }
+
+    Ok(year)
+}
+
+fn parse_month(_month: &str) -> Result<u32> {
+    todo!()
+}
+
 pub fn run(config: Config) -> Result<()> {
     dbg!(config);
     Ok(())
@@ -64,14 +81,6 @@ fn format_month(_year: i32, _month: u32, _print_year: bool, _today: NaiveDate) -
 }
 
 fn last_day_in_month(_year: i32, _month: u32) -> NaiveDate {
-    todo!()
-}
-
-fn parse_month(_month: &str) -> Result<u32> {
-    todo!()
-}
-
-fn parse_year(_year: &str) -> Result<i32> {
     todo!()
 }
 
@@ -95,19 +104,19 @@ mod tests {
         assert!(res.is_err());
         assert_eq!(
             res.unwrap_err().to_string(),
-            "year \"0\" not in the range 1 through 9999"
+            "year 0 not in the range [1,9999]"
         );
 
         let res = parse_year("10000");
         assert!(res.is_err());
         assert_eq!(
             res.unwrap_err().to_string(),
-            "year \"10000\" not in the range 1 through 9999"
+            "year 10000 not in the range [1,9999]"
         );
 
         let res = parse_year("foo");
         assert!(res.is_err());
-        assert_eq!(res.unwrap_err().to_string(), "Invalid integer \"foo\"");
+        assert_eq!(res.unwrap_err().to_string(), "invalid digit found in string");
     }
 
     #[test]
