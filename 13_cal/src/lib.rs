@@ -1,6 +1,4 @@
-use std::ops::RangeBounds;
-
-use anyhow::{bail, Result};
+use anyhow::{bail, Ok, Result};
 use chrono::{Datelike, Local, NaiveDate};
 use clap::{arg, Command};
 
@@ -61,14 +59,37 @@ fn parse_year(year: &str) -> Result<i32> {
     let allowed = 1..=9999;
 
     if !allowed.contains(&year) {
-        bail!("year {year} not in the range [{},{}]", allowed.start(), allowed.end());
+        bail!(
+            "year {year} not in the range [{},{}]",
+            allowed.start(),
+            allowed.end()
+        );
     }
 
     Ok(year)
 }
 
-fn parse_month(_month: &str) -> Result<u32> {
-    todo!()
+fn parse_month(month_text: &str) -> Result<u32> {
+    let month_text = month_text.to_lowercase();
+    let month_index = MONTH_NAMES
+        .iter()
+        .position(|&m| m.to_lowercase().starts_with(&month_text));
+
+    let month = match month_index {
+        Some(index) => (index + 1) as u32,
+        None => month_text.parse::<u32>()?,
+    };
+
+    let allowed = 1..=12;
+    if !allowed.contains(&month) {
+        bail!(
+            "month {month} not in the range [{},{}]",
+            allowed.start(),
+            allowed.end()
+        );
+    }
+
+    Ok(month)
 }
 
 pub fn run(config: Config) -> Result<()> {
@@ -116,7 +137,10 @@ mod tests {
 
         let res = parse_year("foo");
         assert!(res.is_err());
-        assert_eq!(res.unwrap_err().to_string(), "invalid digit found in string");
+        assert_eq!(
+            res.unwrap_err().to_string(),
+            "invalid digit found in string"
+        );
     }
 
     #[test]
@@ -137,19 +161,19 @@ mod tests {
         assert!(res.is_err());
         assert_eq!(
             res.unwrap_err().to_string(),
-            "month \"0\" not in the range 1 through 12"
+            "month 0 not in the range [1,12]"
         );
 
         let res = parse_month("13");
         assert!(res.is_err());
         assert_eq!(
             res.unwrap_err().to_string(),
-            "month \"13\" not in the range 1 through 12"
+            "month 13 not in the range [1,12]"
         );
 
         let res = parse_month("foo");
         assert!(res.is_err());
-        assert_eq!(res.unwrap_err().to_string(), "Invalid month \"foo\"");
+        assert_eq!(res.unwrap_err().to_string(), "invalid digit found in string");
     }
 
     #[test]
