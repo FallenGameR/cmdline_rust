@@ -9,7 +9,7 @@ pub struct Year(pub i32);
 #[derive(Debug, Clone, Copy)]
 pub struct Date {
     pub year: Year,
-    pub month: Option<Month>
+    pub month: Option<Month>,
 }
 
 const MONTH_NAMES: [&str; 12] = [
@@ -28,27 +28,34 @@ const MONTH_NAMES: [&str; 12] = [
 ];
 
 impl Date {
-    pub fn new(date_text: &str) -> Result<Date> {
-        let parts = date_text.split(' ').collect::<Vec<_>>();
+    pub fn parse(date: &str) -> Result<Date> {
+        let parts = date.split(' ').collect::<Vec<_>>();
         match parts.as_slice() {
-            [year] => Date::from_year(year),
-            [month, year] => Date::from_year_month(year, month),
-            _ => bail!("invalid date format")
+            [year] => Ok(Date {
+                year: Date::parse_year(year)?,
+                month: None,
+            }),
+            [month, year] => Ok(Date {
+                year: Date::parse_year(year)?,
+                month: Some(Date::parse_month(month)?),
+            }),
+            _ => bail!("invalid date format"),
         }
     }
 
-    fn from_year(year: &str) -> Result<Date> {
-        Ok(Date{
-            year: Date::parse_year(year)?,
-            month: None,
-        })
-    }
+    pub fn parse_year(year_text: &str) -> Result<Year> {
+        let year = year_text.parse::<i32>()?;
+        let allowed = 1..=9999;
 
-    fn from_year_month(year: &str, month: &str) -> Result<Date> {
-        Ok(Date{
-            year: Date::parse_year(year)?,
-            month: Some(Date::parse_month(month)?),
-        })
+        if !allowed.contains(&year) {
+            bail!(
+                "year {year} not in the range [{},{}]",
+                allowed.start(),
+                allowed.end()
+            );
+        }
+
+        Ok(Year(year))
     }
 
     pub fn parse_month(month_text: &str) -> Result<Month> {
@@ -72,21 +79,6 @@ impl Date {
         }
 
         Ok(Month(month))
-    }
-
-    fn parse_year(year_text: &str) -> Result<Year> {
-        let year = year_text.parse::<i32>()?;
-        let allowed = 1..=9999;
-
-        if !allowed.contains(&year) {
-            bail!(
-                "year {year} not in the range [{},{}]",
-                allowed.start(),
-                allowed.end()
-            );
-        }
-
-        Ok(Year(year))
     }
 }
 
@@ -157,6 +149,9 @@ mod tests {
 
         let res = Date::parse_month("foo");
         assert!(res.is_err());
-        assert_eq!(res.unwrap_err().to_string(), "invalid digit found in string");
+        assert_eq!(
+            res.unwrap_err().to_string(),
+            "invalid digit found in string"
+        );
     }
 }
