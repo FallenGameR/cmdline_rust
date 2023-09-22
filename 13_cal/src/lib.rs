@@ -2,12 +2,21 @@ use anyhow::{bail, Ok, Result};
 use chrono::{Datelike, Local, NaiveDate};
 use clap::{arg, Command};
 
+#[derive(Debug, Clone, Copy)]
+struct Month(u32);
+
+#[derive(Debug, Clone, Copy)]
+struct Year(i32);
+
+#[derive(Debug, Clone, Copy)]
+struct Date(Year, Option<Month>);
+
 // Field sizes reflect choises in the chrono crate
 #[derive(Debug)]
 pub struct Config {
     today: NaiveDate,
-    month: u32,
-    year: i32,
+    month: Month,
+    year: Year,
     show_year: bool,
 }
 
@@ -30,6 +39,7 @@ const MONTH_NAMES: [&str; 12] = [
 
 pub fn get_args() -> Result<Config> {
     // CLI arguments
+    // We try to mimic 'wsl ncal 10 2023 -b'
     let mut matches = Command::new("cal")
         .version("1.0")
         .author("FallenGameR")
@@ -46,32 +56,18 @@ pub fn get_args() -> Result<Config> {
         .get_matches();
 
     let today = Local::now().naive_local();
+    let date: Option<Date> = matches.remove_one("DATE");
 
     // Construct config
     Ok(Config {
         today: today.date(),
-        month: matches.remove_one("month").unwrap_or(today.month()),
-        year: matches.remove_one("DATE").unwrap_or(today.year()),
+        month: matches.remove_one("month").unwrap_or(Month(today.month())),
+        year: date.map(|d| d.0).unwrap_or(Year(today.year())),
         show_year: matches.get_flag("show_year"),
     })
 }
 
-fn parse_date(year: &str) -> Result<i32> {
-    let year = year.parse::<i32>()?;
-    let allowed = 1..=9999;
-
-    if !allowed.contains(&year) {
-        bail!(
-            "year {year} not in the range [{},{}]",
-            allowed.start(),
-            allowed.end()
-        );
-    }
-
-    Ok(year)
-}
-
-fn parse_month(month_text: &str) -> Result<u32> {
+fn parse_month(month_text: &str) -> Result<Month> {
     let month_text = month_text.to_lowercase();
     let month_index = MONTH_NAMES
         .iter()
@@ -91,7 +87,31 @@ fn parse_month(month_text: &str) -> Result<u32> {
         );
     }
 
-    Ok(month)
+    Ok(Month(month))
+}
+
+fn parse_year(year_text: &str) -> Result<Year> {
+    let year = year_text.parse::<i32>()?;
+    let allowed = 1..=9999;
+
+    if !allowed.contains(&year) {
+        bail!(
+            "year {year} not in the range [{},{}]",
+            allowed.start(),
+            allowed.end()
+        );
+    }
+
+    Ok(Year(year))
+}
+
+fn parse_date(date_text: &str) -> Result<Date> {
+    let parts = date_text.split(' ').collect::<Vec<_>>();
+    match parts.as_slice() {
+        [year] => Ok(Date(parse_year(year)?, None)),
+        [month, year] => Ok(Date(parse_year(year)?, Some(parse_month(month)?))),
+        _ => bail!("invalid date format")
+    }
 }
 
 pub fn run(config: Config) -> Result<()> {
@@ -110,34 +130,34 @@ fn last_day_in_month(_year: i32, _month: u32) -> NaiveDate {
 // --------------------------------------------------
 #[cfg(test)]
 mod tests {
-    use super::{format_month, last_day_in_month, parse_month, parse_date};
+    use super::{format_month, last_day_in_month, parse_month, parse_year};
     use chrono::NaiveDate;
 
     #[test]
     fn test_parse_year() {
-        let res = parse_date("1");
+        let res = parse_year("1");
         assert!(res.is_ok());
-        assert_eq!(res.unwrap(), 1i32);
+        assert_eq!(res.unwrap().0, 1i32);
 
-        let res = parse_date("9999");
+        let res = parse_year("9999");
         assert!(res.is_ok());
-        assert_eq!(res.unwrap(), 9999i32);
+        assert_eq!(res.unwrap().0, 9999i32);
 
-        let res = parse_date("0");
+        let res = parse_year("0");
         assert!(res.is_err());
         assert_eq!(
             res.unwrap_err().to_string(),
             "year 0 not in the range [1,9999]"
         );
 
-        let res = parse_date("10000");
+        let res = parse_year("10000");
         assert!(res.is_err());
         assert_eq!(
             res.unwrap_err().to_string(),
             "year 10000 not in the range [1,9999]"
         );
 
-        let res = parse_date("foo");
+        let res = parse_year("foo");
         assert!(res.is_err());
         assert_eq!(
             res.unwrap_err().to_string(),
@@ -149,15 +169,15 @@ mod tests {
     fn test_parse_month() {
         let res = parse_month("1");
         assert!(res.is_ok());
-        assert_eq!(res.unwrap(), 1u32);
+        assert_eq!(res.unwrap().0, 1u32);
 
         let res = parse_month("12");
         assert!(res.is_ok());
-        assert_eq!(res.unwrap(), 12u32);
+        assert_eq!(res.unwrap().0, 12u32);
 
         let res = parse_month("jan");
         assert!(res.is_ok());
-        assert_eq!(res.unwrap(), 1u32);
+        assert_eq!(res.unwrap().0, 1u32);
 
         let res = parse_month("0");
         assert!(res.is_err());
