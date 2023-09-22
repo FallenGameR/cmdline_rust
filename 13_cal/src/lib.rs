@@ -9,7 +9,73 @@ struct Month(u32);
 struct Year(i32);
 
 #[derive(Debug, Clone, Copy)]
-struct Date(Year, Option<Month>);
+struct Date {
+    year: Year,
+    month: Option<Month>
+}
+
+impl Date {
+    fn new(date_text: &str) -> Result<Date> {
+        let parts = date_text.split(' ').collect::<Vec<_>>();
+        match parts.as_slice() {
+            [year] => Date::from_year(year),
+            [month, year] => Date::from_year_month(year, month),
+            _ => bail!("invalid date format")
+        }
+    }
+
+    fn from_year(year: &str) -> Result<Date> {
+        Ok(Date{
+            year: Date::parse_year(year)?,
+            month: None,
+        })
+    }
+
+    fn from_year_month(year: &str, month: &str) -> Result<Date> {
+        Ok(Date{
+            year: Date::parse_year(year)?,
+            month: Some(Date::parse_month(month)?),
+        })
+    }
+
+    fn parse_month(month_text: &str) -> Result<Month> {
+        let month_text = month_text.to_lowercase();
+        let month_index = MONTH_NAMES
+            .iter()
+            .position(|&m| m.to_lowercase().starts_with(&month_text));
+
+        let month = match month_index {
+            Some(index) => (index + 1) as u32,
+            None => month_text.parse::<u32>()?,
+        };
+
+        let allowed = 1..=12;
+        if !allowed.contains(&month) {
+            bail!(
+                "month {month} not in the range [{},{}]",
+                allowed.start(),
+                allowed.end()
+            );
+        }
+
+        Ok(Month(month))
+    }
+
+    fn parse_year(year_text: &str) -> Result<Year> {
+        let year = year_text.parse::<i32>()?;
+        let allowed = 1..=9999;
+
+        if !allowed.contains(&year) {
+            bail!(
+                "year {year} not in the range [{},{}]",
+                allowed.start(),
+                allowed.end()
+            );
+        }
+
+        Ok(Year(year))
+    }
+}
 
 // Field sizes reflect choises in the chrono crate
 #[derive(Debug)]
@@ -47,71 +113,26 @@ pub fn get_args() -> Result<Config> {
         .args([
             arg!([DATE]... "Year number (1-9999) or month followed by year number")
                 .help_heading("DATE as [[month] year]")
-                .value_parser(parse_date),
+                .value_parser(Date::new),
             arg!(-m --month <MONTH> "Month name or number (1-12)\nIs ignored if DATE specifies month")
-                .value_parser(parse_month),
+                .value_parser(Date::parse_month),
             arg!(-y --show_year "Show calendar for the whole year")
                 .conflicts_with("month"),
         ])
         .get_matches();
 
+    // Parse arguments
     let today = Local::now().naive_local();
     let date: Option<Date> = matches.remove_one("DATE");
+    let month: Option<Month> = matches.remove_one("month");
 
     // Construct config
     Ok(Config {
         today: today.date(),
-        month: matches.remove_one("month").unwrap_or(Month(today.month())),
-        year: date.map(|d| d.0).unwrap_or(Year(today.year())),
+        month: date.map(|d| d.month).flatten().or(month).unwrap_or(Month(today.month())),
+        year: date.map(|d| d.year).unwrap_or(Year(today.year())),
         show_year: matches.get_flag("show_year"),
     })
-}
-
-fn parse_month(month_text: &str) -> Result<Month> {
-    let month_text = month_text.to_lowercase();
-    let month_index = MONTH_NAMES
-        .iter()
-        .position(|&m| m.to_lowercase().starts_with(&month_text));
-
-    let month = match month_index {
-        Some(index) => (index + 1) as u32,
-        None => month_text.parse::<u32>()?,
-    };
-
-    let allowed = 1..=12;
-    if !allowed.contains(&month) {
-        bail!(
-            "month {month} not in the range [{},{}]",
-            allowed.start(),
-            allowed.end()
-        );
-    }
-
-    Ok(Month(month))
-}
-
-fn parse_year(year_text: &str) -> Result<Year> {
-    let year = year_text.parse::<i32>()?;
-    let allowed = 1..=9999;
-
-    if !allowed.contains(&year) {
-        bail!(
-            "year {year} not in the range [{},{}]",
-            allowed.start(),
-            allowed.end()
-        );
-    }
-
-    Ok(Year(year))
-}
-
-fn parse_date(date_text: &str) -> Result<Date> {
-    let parts = date_text.split(' ').collect::<Vec<_>>();
-    match parts.as_slice() {
-        [year] => Ok(Date(parse_year(year)?, None)),
-        [month, year] => Ok(Date(parse_year(year)?, Some(parse_month(month)?))),
-        _ => bail!("invalid date format")
-    }
 }
 
 pub fn run(config: Config) -> Result<()> {
@@ -130,34 +151,35 @@ fn last_day_in_month(_year: i32, _month: u32) -> NaiveDate {
 // --------------------------------------------------
 #[cfg(test)]
 mod tests {
-    use super::{format_month, last_day_in_month, parse_month, parse_year};
+    use crate::Date;
+    use super::{format_month, last_day_in_month};
     use chrono::NaiveDate;
 
     #[test]
     fn test_parse_year() {
-        let res = parse_year("1");
+        let res = Date::parse_year("1");
         assert!(res.is_ok());
         assert_eq!(res.unwrap().0, 1i32);
 
-        let res = parse_year("9999");
+        let res = Date::parse_year("9999");
         assert!(res.is_ok());
         assert_eq!(res.unwrap().0, 9999i32);
 
-        let res = parse_year("0");
+        let res = Date::parse_year("0");
         assert!(res.is_err());
         assert_eq!(
             res.unwrap_err().to_string(),
             "year 0 not in the range [1,9999]"
         );
 
-        let res = parse_year("10000");
+        let res = Date::parse_year("10000");
         assert!(res.is_err());
         assert_eq!(
             res.unwrap_err().to_string(),
             "year 10000 not in the range [1,9999]"
         );
 
-        let res = parse_year("foo");
+        let res = Date::parse_year("foo");
         assert!(res.is_err());
         assert_eq!(
             res.unwrap_err().to_string(),
@@ -167,33 +189,33 @@ mod tests {
 
     #[test]
     fn test_parse_month() {
-        let res = parse_month("1");
+        let res = Date::parse_month("1");
         assert!(res.is_ok());
         assert_eq!(res.unwrap().0, 1u32);
 
-        let res = parse_month("12");
+        let res = Date::parse_month("12");
         assert!(res.is_ok());
         assert_eq!(res.unwrap().0, 12u32);
 
-        let res = parse_month("jan");
+        let res = Date::parse_month("jan");
         assert!(res.is_ok());
         assert_eq!(res.unwrap().0, 1u32);
 
-        let res = parse_month("0");
+        let res = Date::parse_month("0");
         assert!(res.is_err());
         assert_eq!(
             res.unwrap_err().to_string(),
             "month 0 not in the range [1,12]"
         );
 
-        let res = parse_month("13");
+        let res = Date::parse_month("13");
         assert!(res.is_err());
         assert_eq!(
             res.unwrap_err().to_string(),
             "month 13 not in the range [1,12]"
         );
 
-        let res = parse_month("foo");
+        let res = Date::parse_month("foo");
         assert!(res.is_err());
         assert_eq!(res.unwrap_err().to_string(), "invalid digit found in string");
     }
