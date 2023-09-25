@@ -1,7 +1,7 @@
 mod date;
 
 use anyhow::{Ok, Result};
-use chrono::{Datelike, Local, NaiveDate, format};
+use chrono::{format, Datelike, Local, NaiveDate, Weekday};
 use clap::{arg, Command};
 use date::{Date, Month, Year};
 
@@ -71,12 +71,25 @@ fn last_day_in_month(year: i32, month: u32) -> NaiveDate {
     }
 }
 
-fn format_month(year: i32, month: u32, add_year: bool, today: NaiveDate) -> Vec<String> {
+// [0] "   February 2020      ",
+// [1] "Su Mo Tu We Th Fr Sa  ",
+// [2] "                   1  ",
+// [3] " 2  3  4  5  6  7  8  ",
+// [4] " 9 10 11 12 13 14 15  ",
+// [5] "16 17 18 19 20 21 22  ",
+// [6] "23 24 25 26 27 28 29  ",
+// [7] "                      ",
+//
+// Plus current date needs to be highlighted
+fn format_month(year: i32, month: u32, add_year: bool, _today: NaiveDate) -> Vec<String> {
     let mut result = Vec::new();
-    let mut date = NaiveDate::from_ymd_opt(year, month, 1).expect("Date must be valid");
-    let test = date.weekday();
+    let mut current = NaiveDate::from_ymd_opt(year, month, 1).expect("Date must be valid");
+    let month_index = current.month0();
 
-    let month_text = date::MONTH_NAMES.get(date.month0() as usize).expect("Date must be valid");
+    // Header
+    let month_text = date::MONTH_NAMES
+        .get(current.month0() as usize)
+        .expect("Date must be valid");
     let header_text = if add_year {
         format!("{month_text} {year}")
     } else {
@@ -84,6 +97,51 @@ fn format_month(year: i32, month: u32, add_year: bool, today: NaiveDate) -> Vec<
     };
     let header_text = format!("{header_text:^20}  ");
     result.push(header_text);
+
+    // Labels
+    let week_start = Weekday::Sun;
+    let mut day_of_week = week_start;
+    let mut line = String::new();
+
+    loop {
+        let mut text = day_of_week.to_string();
+        text.truncate(2);
+        line.push_str(&format!("{:2} ", text));
+
+        day_of_week = day_of_week.succ();
+        if day_of_week == week_start {
+            break;
+        }
+    }
+    line.push_str(" ");
+    result.push(line);
+
+    // Print dates
+    let mut day_of_week = week_start;
+    while current.month0() == month_index {
+        let mut line = String::new();
+        loop {
+            if (current.weekday() == day_of_week) && (current.month0() == month_index) {
+                line.push_str(&format!("{:2} ", current.day0() + 1));
+                current = current.succ_opt().expect("Date must be valid");
+            } else {
+                line.push_str(&format!("{:2} ", " "));
+            }
+
+            day_of_week = day_of_week.succ();
+            if day_of_week == week_start {
+                break;
+            }
+        }
+        line.push_str(" ");
+        result.push(line);
+    }
+
+    // Pad for 8 lines per week representation
+    for _ in result.len()..8 {
+        let line = format!("{:20}  ", " ").to_owned();
+        result.push(line);
+    }
 
     result
 }
