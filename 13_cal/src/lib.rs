@@ -1,7 +1,7 @@
 mod date;
 
 use anyhow::{Ok, Result};
-use chrono::{format, Datelike, Local, NaiveDate, Weekday};
+use chrono::{Datelike, Local, NaiveDate, Weekday};
 use clap::{arg, Command};
 use date::{Date, Month, Year};
 
@@ -83,12 +83,11 @@ fn last_day_in_month(year: i32, month: u32) -> NaiveDate {
 // Plus current date needs to be highlighted
 fn format_month(year: i32, month: u32, add_year: bool, _today: NaiveDate) -> Vec<String> {
     let mut result = Vec::new();
-    let mut current = NaiveDate::from_ymd_opt(year, month, 1).expect("Date must be valid");
-    let month_index = current.month0();
+    let mut date = NaiveDate::from_ymd_opt(year, month, 1).expect("Date must be valid");
 
     // Header
     let month_text = date::MONTH_NAMES
-        .get(current.month0() as usize)
+        .get(date.month0() as usize)
         .expect("Date must be valid");
     let header_text = if add_year {
         format!("{month_text} {year}")
@@ -98,49 +97,47 @@ fn format_month(year: i32, month: u32, add_year: bool, _today: NaiveDate) -> Vec
     let header_text = format!("{header_text:^20}  ");
     result.push(header_text);
 
-    // Labels
+    // Week processor - iterates over week days startung from week_start
     let week_start = Weekday::Sun;
-    let mut day_of_week = week_start;
-    let mut line = String::new();
-
-    loop {
-        let mut text = day_of_week.to_string();
-        text.truncate(2);
-        line.push_str(&format!("{:2} ", text));
-
-        day_of_week = day_of_week.succ();
-        if day_of_week == week_start {
-            break;
-        }
-    }
-    line.push_str(" ");
-    result.push(line);
-
-    // Print dates
-    let mut day_of_week = week_start;
-    while current.month0() == month_index {
+    let mut weekday = week_start;
+    let mut process_week = |process_day: &mut dyn FnMut(Weekday) -> String| -> String {
         let mut line = String::new();
         loop {
-            if (current.weekday() == day_of_week) && (current.month0() == month_index) {
-                line.push_str(&format!("{:2} ", current.day0() + 1));
-                current = current.succ_opt().expect("Date must be valid");
-            } else {
-                line.push_str(&format!("{:2} ", " "));
-            }
-
-            day_of_week = day_of_week.succ();
-            if day_of_week == week_start {
+            line.push_str(&process_day(weekday));
+            weekday = weekday.succ();
+            if weekday == week_start {
                 break;
             }
         }
         line.push_str(" ");
-        result.push(line);
+        line
+    };
+
+    // Labels
+    result.push(process_week(&mut |weekday: Weekday| -> String {
+        let mut text = weekday.to_string();
+        text.truncate(2);
+        format!("{:2} ", text)
+    }));
+
+    // Dates table
+    let processed_month = date.month0();
+    while date.month0() == processed_month {
+        result.push(process_week(&mut |weekday: Weekday| -> String {
+            // Space padding
+            if date.weekday() != weekday || date.month0() != processed_month {
+                return format!("{:2} ", " ");
+            }
+
+            let text = format!("{:2} ", date.day0() + 1);
+            date = date.succ_opt().expect("Date must be valid");
+            text
+        }));
     }
 
     // Pad for 8 lines per week representation
     for _ in result.len()..8 {
-        let line = format!("{:20}  ", " ").to_owned();
-        result.push(line);
+        result.push(format!("{:20}  ", " "));
     }
 
     result
