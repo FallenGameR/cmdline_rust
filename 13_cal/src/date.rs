@@ -12,7 +12,7 @@ pub struct Date {
     pub month: Option<Month>,
 }
 
-const MONTH_NAMES: [&str; 12] = [
+pub const MONTH_NAMES: [&str; 12] = [
     "January",
     "February",
     "March",
@@ -65,8 +65,8 @@ impl Date {
             .position(|&m| m.to_lowercase().starts_with(&month_text));
 
         let month = match month_index {
-            Some(index) => (index + 1) as u32,
             None => month_text.parse::<u32>()?,
+            Some(index) => (index + 1) as u32,
         };
 
         let allowed = 1..=12;

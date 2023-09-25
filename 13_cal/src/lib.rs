@@ -1,7 +1,7 @@
 mod date;
 
 use anyhow::{Ok, Result};
-use chrono::{Datelike, Local, NaiveDate};
+use chrono::{Datelike, Local, NaiveDate, format};
 use clap::{arg, Command};
 use date::{Date, Month, Year};
 
@@ -71,11 +71,21 @@ fn last_day_in_month(year: i32, month: u32) -> NaiveDate {
     }
 }
 
-fn format_month(year: i32, month: u32, _print_year: bool, _today: NaiveDate) -> Vec<String> {
+fn format_month(year: i32, month: u32, add_year: bool, today: NaiveDate) -> Vec<String> {
+    let mut result = Vec::new();
     let mut date = NaiveDate::from_ymd_opt(year, month, 1).expect("Date must be valid");
     let test = date.weekday();
 
-    todo!()
+    let month_text = date::MONTH_NAMES.get(date.month0() as usize).expect("Date must be valid");
+    let header_text = if add_year {
+        format!("{month_text} {year}")
+    } else {
+        format!("{month_text}")
+    };
+    let header_text = format!("{header_text:^20}  ");
+    result.push(header_text);
+
+    result
 }
 
 // --------------------------------------------------
