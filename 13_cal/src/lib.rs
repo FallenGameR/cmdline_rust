@@ -1,5 +1,6 @@
 mod date;
 
+use ansi_term::Style;
 use anyhow::{Ok, Result};
 use chrono::{Datelike, Local, NaiveDate, Weekday};
 use clap::{arg, Command};
@@ -81,7 +82,7 @@ fn last_day_in_month(year: i32, month: u32) -> NaiveDate {
 // [7] "                      ",
 //
 // Plus current date needs to be highlighted
-fn format_month(year: i32, month: u32, add_year: bool, _today: NaiveDate) -> Vec<String> {
+fn format_month(year: i32, month: u32, add_year: bool, today: NaiveDate) -> Vec<String> {
     let mut result = Vec::new();
     let mut date = NaiveDate::from_ymd_opt(year, month, 1).expect("Date must be valid");
 
@@ -129,7 +130,14 @@ fn format_month(year: i32, month: u32, add_year: bool, _today: NaiveDate) -> Vec
                 return format!("{:2} ", " ");
             }
 
-            let text = format!("{:2} ", date.day0() + 1);
+            // Current day highlight
+            let mut text = format!("{:2}", date.day0() + 1);
+            if date == today {
+                text = Style::default().reverse().paint(text).to_string();
+            }
+            text.push(' ');
+
+            // Rewind to next date, return currently rendered one
             date = date.succ_opt().expect("Date must be valid");
             text
         }));
