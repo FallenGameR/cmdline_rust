@@ -1,10 +1,10 @@
 mod date;
-
 use ansi_term::Style;
 use anyhow::{Ok, Result};
 use chrono::{Datelike, Local, NaiveDate, Weekday};
 use clap::{arg, Command};
 use date::{Date, Month, Year};
+use itertools::Itertools;
 
 // Field sizes reflect choises in the chrono crate
 #[derive(Debug)]
@@ -15,8 +15,6 @@ pub struct Config {
     show_year: bool,
 }
 
-const LINE_WIDTH: usize = 22;
-
 pub fn get_args() -> Result<Config> {
     // CLI arguments
     // We try to mimic 'wsl ncal 10 2023 -b'
@@ -26,8 +24,7 @@ pub fn get_args() -> Result<Config> {
         .about("Proleptic Gregorian month calendar with coloring")
         .args([
             arg!([DATE]... "Year number (1-9999) or month followed by year number")
-                .help_heading("DATE as [[month] year]")
-                .value_parser(Date::parse),
+                .help_heading("DATE as [[month] year]"),
             arg!(-m --month <MONTH> "Month name or number (1-12)\nIs ignored if DATE specifies month")
                 .value_parser(Date::parse_month),
             arg!(-y --show_year "Show calendar for the whole year")
@@ -37,7 +34,9 @@ pub fn get_args() -> Result<Config> {
 
     // Parse arguments
     let today = Local::now().naive_local();
-    let date: Option<Date> = matches.remove_one("DATE");
+    let date_parts = matches.remove_many("DATE").expect("test").collect();
+    let date_parts = date_parts.map(|e| e.into_iter().join(" "));
+    let date: Option<Date> = Date::parse(&date_parts);
     let month: Option<Month> = matches.remove_one("month");
 
     // Construct config
@@ -54,22 +53,13 @@ pub fn get_args() -> Result<Config> {
 }
 
 pub fn run(config: Config) -> Result<()> {
-    dbg!(config);
-    Ok(())
-}
+    dbg!(&config);
 
-fn last_day_in_month(year: i32, month: u32) -> NaiveDate {
-    const MIN_DAYS_IN_SHORTEST_MONTH: u32 = 28;
-    let mut date = NaiveDate::from_ymd_opt(year, month, MIN_DAYS_IN_SHORTEST_MONTH)
-        .expect("Date must be valid");
-    let orig_month0 = date.month0();
-
-    loop {
-        date = date.succ_opt().expect("Date must be valid");
-        if date.month0() != orig_month0 {
-            return date.pred_opt().expect("Date must be valid");
-        }
+    for line in format_month(config.year.0, config.month.0, !config.show_year, config.today) {
+        println!("{line}");
     }
+
+    Ok(())
 }
 
 // [0] "   February 2020      ",
