@@ -11,7 +11,7 @@ pub struct Config {
     today: NaiveDate,
     month: Month,
     year: Year,
-    show_year: bool,
+    show_full_year: bool,
 }
 
 pub fn get_args() -> Result<Config> {
@@ -47,14 +47,19 @@ pub fn get_args() -> Result<Config> {
 
     // Construct config
     //
-    // Month is resolved in 3 steps:
+    // Month is resolved in steps:
     // - from DATE if specified
     // - from MONTH if sepecified
     // - otherwise it is current month
     //
-    // Year is resolved in 2 steps:
+    // Year is resolved in steps:
     // - from DATE if specified
     // - otherwise it is current year
+    //
+    // Show full year is resolved in steps:
+    // - from CLI flag
+    // - if DATE specifies just the year without month
+    // - otherwise it is false
     //
     Ok(Config {
         today: today.date(),
@@ -64,14 +69,14 @@ pub fn get_args() -> Result<Config> {
             .or(month)
             .unwrap_or(Month(today.month())),
         year: date.map(|d| d.year).unwrap_or(Year(today.year())),
-        show_year: matches.get_flag("show_year"),
+        show_full_year: matches.get_flag("show_year") || date.is_some_and(|d| d.month.is_none()),
     })
 }
 
 pub fn run(config: Config) -> Result<()> {
     dbg!(&config);
 
-    for line in format_month(config.year.0, config.month.0, !config.show_year, config.today) {
+    for line in format_month(config.year.0, config.month.0, !config.show_full_year, config.today) {
         println!("{line}");
     }
 
