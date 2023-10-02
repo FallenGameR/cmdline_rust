@@ -22,11 +22,11 @@ pub fn get_args() -> Result<Config> {
         .author("FallenGameR")
         .about("Proleptic Gregorian month calendar with coloring")
         .args([
-            arg!([DATE]... "Year number (1-9999) or month followed by year number")
+            arg!([DATE]... "Year number (1-9999) or month name or number (1-12) followed by year number")
                 .help_heading("DATE as [[month] year]"),
             arg!(-m --month <MONTH> "Month name or number (1-12)\nIs ignored if DATE specifies month")
                 .value_parser(Date::parse_month),
-            arg!(-y --show_year "Show calendar for the whole year")
+            arg!(-y --show_full_year "Show calendar for the whole year")
                 .conflicts_with("month"),
         ])
         .get_matches();
@@ -69,7 +69,7 @@ pub fn get_args() -> Result<Config> {
             .or(month)
             .unwrap_or(Month(today.month())),
         year: date.map(|d| d.year).unwrap_or(Year(today.year())),
-        show_full_year: matches.get_flag("show_year") || date.is_some_and(|d| d.month.is_none()),
+        show_full_year: matches.get_flag("show_full_year") || date.is_some_and(|d| d.month.is_none()),
     })
 }
 
