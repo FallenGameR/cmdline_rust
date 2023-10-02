@@ -93,8 +93,15 @@ mod tests {
     #[test]
     fn test_parse_year() {
         let res = Date::parse_year("1");
+        assert!(res.is_err());
+        assert_eq!(
+            res.unwrap_err().to_string(),
+            "year 1 not in the range [99,9999]"
+        );
+
+        let res = Date::parse_year("100");
         assert!(res.is_ok());
-        assert_eq!(res.unwrap().0, 1i32);
+        assert_eq!(res.unwrap().0, 100i32);
 
         let res = Date::parse_year("9999");
         assert!(res.is_ok());
@@ -104,14 +111,14 @@ mod tests {
         assert!(res.is_err());
         assert_eq!(
             res.unwrap_err().to_string(),
-            "year 0 not in the range [1,9999]"
+            "year 0 not in the range [99,9999]"
         );
 
         let res = Date::parse_year("10000");
         assert!(res.is_err());
         assert_eq!(
             res.unwrap_err().to_string(),
-            "year 10000 not in the range [1,9999]"
+            "year 10000 not in the range [99,9999]"
         );
 
         let res = Date::parse_year("foo");
