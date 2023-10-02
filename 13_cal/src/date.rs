@@ -28,6 +28,9 @@ pub const MONTH_NAMES: [&str; 12] = [
 ];
 
 impl Date {
+    /// Parse date from string:
+    /// - YEAR
+    /// - MONTH YEAR
     pub fn parse(date: &str) -> Result<Date> {
         let parts = date.split(' ').collect::<Vec<_>>();
         match parts.as_slice() {

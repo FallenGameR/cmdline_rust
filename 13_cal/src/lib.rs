@@ -83,17 +83,25 @@ pub fn run(config: Config) -> Result<()> {
     Ok(())
 }
 
-// [0] "   February 2020      ",
-// [1] "Su Mo Tu We Th Fr Sa  ",
-// [2] "                   1  ",
-// [3] " 2  3  4  5  6  7  8  ",
-// [4] " 9 10 11 12 13 14 15  ",
-// [5] "16 17 18 19 20 21 22  ",
-// [6] "23 24 25 26 27 28 29  ",
-// [7] "                      ",
-//
-// Plus current date needs to be highlighted
-fn format_month(year: i32, month: u32, add_year: bool, today: NaiveDate) -> Vec<String> {
+/// Renders a month as a vector of strings, 7 rows, 22 chars each
+///
+/// - `year` and `month` - identify the month to render
+/// - `add_year_annitation` - if true, year is added to the header
+/// - `highlighted_day` - date that would be highlighted (usually today)
+///
+/// # Example
+///
+/// ```
+/// [0] "   February 2020      "
+/// [1] "Su Mo Tu We Th Fr Sa  "
+/// [2] "                   1  "
+/// [3] " 2  3  4  5  6  7  8  "
+/// [4] " 9 10 11 12 13 14 15  "
+/// [5] "16 17 18 19 20 21 22  "
+/// [6] "23 24 25 26 27 28 29  "
+/// [7] "                      "
+/// ```
+fn format_month(year: i32, month: u32, add_year_annitation: bool, highlighted_day: NaiveDate) -> Vec<String> {
     let mut result = Vec::new();
     let mut date = NaiveDate::from_ymd_opt(year, month, 1).expect("Date must be valid");
 
@@ -101,7 +109,7 @@ fn format_month(year: i32, month: u32, add_year: bool, today: NaiveDate) -> Vec<
     let month_text = date::MONTH_NAMES
         .get(date.month0() as usize)
         .expect("Date must be valid");
-    let header_text = if add_year {
+    let header_text = if add_year_annitation {
         format!("{month_text} {year}")
     } else {
         format!("{month_text}")
@@ -143,7 +151,7 @@ fn format_month(year: i32, month: u32, add_year: bool, today: NaiveDate) -> Vec<
 
             // Current day highlight
             let mut text = format!("{:2}", date.day0() + 1);
-            if date == today {
+            if date == highlighted_day {
                 text = Style::default().reverse().paint(text).to_string();
             }
             text.push(' ');
