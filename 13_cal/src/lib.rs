@@ -91,7 +91,7 @@ pub fn run(config: Config) -> Result<()> {
 ///
 /// # Example
 ///
-/// ```
+/// ```ignore
 /// [0] "   February 2020      "
 /// [1] "Su Mo Tu We Th Fr Sa  "
 /// [2] "                   1  "
