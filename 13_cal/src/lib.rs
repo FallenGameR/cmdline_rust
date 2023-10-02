@@ -60,20 +60,19 @@ pub fn get_args() -> Result<Config> {
     //
     // Show full year is resolved in steps:
     // - from CLI flag
-    // - if month is not specified neither via DATE nor via MONTH
+    // - if month was not specified neither via DATE nor via MONTH _and_
+    //   year was explicitly specified (so when no arguments are given we show only the current month)
     // - otherwise it is false
     //
     Ok(Config {
         today: today.date(),
         month: explicit_month.unwrap_or(Month(today.month())),
         year: explicit_year.unwrap_or(Year(today.year())),
-        show_full_year: matches.get_flag("show_full_year") || explicit_month.is_none(),
+        show_full_year: matches.get_flag("show_full_year") || (explicit_month.is_none() && explicit_year.is_some()),
     })
 }
 
 pub fn run(config: Config) -> Result<()> {
-    dbg!(&config);
-
     match config.show_full_year {
         false => {
             // When only a single month is shown we add the year into the header
