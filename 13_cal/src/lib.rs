@@ -34,9 +34,9 @@ pub fn get_args() -> Result<Config> {
 
     // Parse arguments
     let today = Local::now().naive_local();
-    let date_parts = matches.remove_many("DATE").expect("test").collect();
-    let date_parts = date_parts.map(|e| e.into_iter().join(" "));
-    let date: Option<Date> = Date::parse(&date_parts);
+    let date_parts: Vec<String> = matches.remove_many("DATE").unwrap_or_default().collect();
+    let date_parts = date_parts.join(" ");
+    let date: Option<Date> = Date::parse(&date_parts)?;
     let month: Option<Month> = matches.remove_one("month");
 
     // Construct config
