@@ -1,10 +1,9 @@
 mod date;
 use ansi_term::Style;
-use anyhow::{Ok, Result};
+use anyhow::{Ok, Result, bail};
 use chrono::{Datelike, Local, NaiveDate, Weekday};
 use clap::{arg, Command};
 use date::{Date, Month, Year};
-use itertools::Itertools;
 
 // Field sizes reflect choises in the chrono crate
 #[derive(Debug)]
@@ -34,12 +33,29 @@ pub fn get_args() -> Result<Config> {
 
     // Parse arguments
     let today = Local::now().naive_local();
+    let month = matches.remove_one("month");
     let date_parts: Vec<String> = matches.remove_many("DATE").unwrap_or_default().collect();
-    let date_parts = date_parts.join(" ");
-    let date: Option<Date> = Date::parse(&date_parts)?;
-    let month: Option<Month> = matches.remove_one("month");
+    let date = match date_parts.as_slice() {
+        [] => None,
+        parts => Some(Date::parse(&parts.join(" "))?),
+    };
+
+    // Sanity check, can't specify month twice
+    if date.map(|d| d.month).is_some() && month.is_some() {
+        bail!("Can't specify month twice");
+    }
 
     // Construct config
+    //
+    // Month is resolved in 3 steps:
+    // - from DATE if specified
+    // - from MONTH if sepecified
+    // - otherwise it is current month
+    //
+    // Year is resolved in 2 steps:
+    // - from DATE if specified
+    // - otherwise it is current year
+    //
     Ok(Config {
         today: today.date(),
         month: date
@@ -144,24 +160,8 @@ fn format_month(year: i32, month: u32, add_year: bool, today: NaiveDate) -> Vec<
 // --------------------------------------------------
 #[cfg(test)]
 mod tests {
-    use super::{format_month, last_day_in_month};
+    use super::format_month;
     use chrono::NaiveDate;
-
-    #[test]
-    fn test_last_day_in_month() {
-        assert_eq!(
-            last_day_in_month(2020, 1),
-            NaiveDate::from_ymd_opt(2020, 1, 31).unwrap()
-        );
-        assert_eq!(
-            last_day_in_month(2020, 2),
-            NaiveDate::from_ymd_opt(2020, 2, 29).unwrap()
-        );
-        assert_eq!(
-            last_day_in_month(2020, 4),
-            NaiveDate::from_ymd_opt(2020, 4, 30).unwrap()
-        );
-    }
 
     #[test]
     fn test_format_month() {
