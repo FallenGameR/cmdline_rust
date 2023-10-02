@@ -40,7 +40,7 @@ pub fn get_args() -> Result<Config> {
         parts => Some(Date::parse(&parts.join(" "))?),
     };
     let explicit_year = date.map(|d| d.year);
-    let explicit_month = date.map(|d| d.month).flatten().or(month);
+    let explicit_month = date.and_then(|d| d.month).or(month);
 
     // Sanity check, can't specify month twice
     if date.is_some_and(|d| d.month.is_some()) && month.is_some() {
@@ -164,7 +164,7 @@ fn format_month(
                 break;
             }
         }
-        line.push_str(" ");
+        line.push(' ');
         line
     };
 
@@ -172,7 +172,7 @@ fn format_month(
     result.push(process_week(&mut |weekday: Weekday| -> String {
         let mut text = weekday.to_string();
         text.truncate(2);
-        format!("{:2} ", text)
+        format!("{text:2} ")
     }));
 
     // Dates table
