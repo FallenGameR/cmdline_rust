@@ -41,7 +41,7 @@ pub fn get_args() -> Result<Config> {
     };
 
     // Sanity check, can't specify month twice
-    if date.map(|d| d.month).is_some() && month.is_some() {
+    if date.is_some_and(|d| d.month.is_some()) && month.is_some() {
         bail!("Can't specify month twice");
     }
 

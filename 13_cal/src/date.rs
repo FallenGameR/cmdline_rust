@@ -45,7 +45,7 @@ impl Date {
 
     pub fn parse_year(year_text: &str) -> Result<Year> {
         let year = year_text.parse::<i32>()?;
-        let allowed = 1..=9999;
+        let allowed = 99..=9999;
 
         if !allowed.contains(&year) {
             bail!(
