@@ -39,6 +39,8 @@ pub fn get_args() -> Result<Config> {
         [] => None,
         parts => Some(Date::parse(&parts.join(" "))?),
     };
+    let explicit_year = date.map(|d| d.year);
+    let explicit_month = date.map(|d| d.month).flatten().or(month);
 
     // Sanity check, can't specify month twice
     if date.is_some_and(|d| d.month.is_some()) && month.is_some() {
@@ -58,26 +60,31 @@ pub fn get_args() -> Result<Config> {
     //
     // Show full year is resolved in steps:
     // - from CLI flag
-    // - if DATE specifies just the year without month
+    // - if month is not specified neither via DATE nor via MONTH
     // - otherwise it is false
     //
     Ok(Config {
         today: today.date(),
-        month: date
-            .map(|d| d.month)
-            .flatten()
-            .or(month)
-            .unwrap_or(Month(today.month())),
-        year: date.map(|d| d.year).unwrap_or(Year(today.year())),
-        show_full_year: matches.get_flag("show_full_year") || date.is_some_and(|d| d.month.is_none()),
+        month: explicit_month.unwrap_or(Month(today.month())),
+        year: explicit_year.unwrap_or(Year(today.year())),
+        show_full_year: matches.get_flag("show_full_year") || explicit_month.is_none(),
     })
 }
 
 pub fn run(config: Config) -> Result<()> {
     dbg!(&config);
 
-    for line in format_month(config.year.0, config.month.0, !config.show_full_year, config.today) {
-        println!("{line}");
+    match config.show_full_year {
+        false => {
+            // When only a single month is shown we add the year into the header
+            for line in format_month(config.year.0, config.month.0, true, config.today) {
+                println!("{line}");
+            }
+        }
+        true => {
+            // When we render the whole year we use a special header
+            println!("{year:^44}", year = config.year.0);
+        },
     }
 
     Ok(())
