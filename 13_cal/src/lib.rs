@@ -1,6 +1,6 @@
 mod date;
 use ansi_term::Style;
-use anyhow::{Ok, Result, bail};
+use anyhow::{bail, Ok, Result};
 use chrono::{Datelike, Local, NaiveDate, Weekday};
 use clap::{arg, Command};
 use date::{Date, Month, Year};
@@ -68,7 +68,8 @@ pub fn get_args() -> Result<Config> {
         today: today.date(),
         month: explicit_month.unwrap_or(Month(today.month())),
         year: explicit_year.unwrap_or(Year(today.year())),
-        show_full_year: matches.get_flag("show_full_year") || (explicit_month.is_none() && explicit_year.is_some()),
+        show_full_year: matches.get_flag("show_full_year")
+            || (explicit_month.is_none() && explicit_year.is_some()),
     })
 }
 
@@ -82,8 +83,64 @@ pub fn run(config: Config) -> Result<()> {
         }
         true => {
             // When we render the whole year we use a special header
-            println!("{year:^44}", year = config.year.0);
-        },
+            println!("{year:^66}", year = config.year.0);
+
+            let months = (1..=12)
+                .map(|month| format_month(config.year.0, month, false, config.today))
+                .collect::<Vec<_>>();
+
+            for chunk in months.chunks(3) {
+                let [first, second, third] = chunk else {
+                    bail!("Invalid chunk")
+                };
+
+                for line in 0..8 {
+                    print!("{}", first[line]);
+                    print!("{}", second[line]);
+                    print!("{}", third[line]);
+                    println!();
+                }
+                println!();
+            }
+
+            /*
+                  January               February               March
+            Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa
+                      1  2  3  4                     1   1  2  3  4  5  6  7
+             5  6  7  8  9 10 11   2  3  4  5  6  7  8   8  9 10 11 12 13 14
+            12 13 14 15 16 17 18   9 10 11 12 13 14 15  15 16 17 18 19 20 21
+            19 20 21 22 23 24 25  16 17 18 19 20 21 22  22 23 24 25 26 27 28
+            26 27 28 29 30 31     23 24 25 26 27 28 29  29 30 31
+
+
+                   April                  May                   June
+            Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa
+                      1  2  3  4                  1  2      1  2  3  4  5  6
+             5  6  7  8  9 10 11   3  4  5  6  7  8  9   7  8  9 10 11 12 13
+            12 13 14 15 16 17 18  10 11 12 13 14 15 16  14 15 16 17 18 19 20
+            19 20 21 22 23 24 25  17 18 19 20 21 22 23  21 22 23 24 25 26 27
+            26 27 28 29 30        24 25 26 27 28 29 30  28 29 30
+                                  31
+
+                    July                 August              September
+            Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa
+                      1  2  3  4                     1         1  2  3  4  5
+             5  6  7  8  9 10 11   2  3  4  5  6  7  8   6  7  8  9 10 11 12
+            12 13 14 15 16 17 18   9 10 11 12 13 14 15  13 14 15 16 17 18 19
+            19 20 21 22 23 24 25  16 17 18 19 20 21 22  20 21 22 23 24 25 26
+            26 27 28 29 30 31     23 24 25 26 27 28 29  27 28 29 30
+                                  30 31
+
+                  October               November              December
+            Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa
+                         1  2  3   1  2  3  4  5  6  7         1  2  3  4  5
+             4  5  6  7  8  9 10   8  9 10 11 12 13 14   6  7  8  9 10 11 12
+            11 12 13 14 15 16 17  15 16 17 18 19 20 21  13 14 15 16 17 18 19
+            18 19 20 21 22 23 24  22 23 24 25 26 27 28  20 21 22 23 24 25 26
+            25 26 27 28 29 30 31  29 30                 27 28 29 30 31
+
+                         */
+        }
     }
 
     Ok(())
@@ -107,7 +164,12 @@ pub fn run(config: Config) -> Result<()> {
 /// [6] "23 24 25 26 27 28 29  "
 /// [7] "                      "
 /// ```
-fn format_month(year: i32, month: u32, add_year_annitation: bool, highlighted_day: NaiveDate) -> Vec<String> {
+fn format_month(
+    year: i32,
+    month: u32,
+    add_year_annitation: bool,
+    highlighted_day: NaiveDate,
+) -> Vec<String> {
     let mut result = Vec::new();
     let mut date = NaiveDate::from_ymd_opt(year, month, 1).expect("Date must be valid");
 
