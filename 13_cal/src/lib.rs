@@ -74,39 +74,37 @@ pub fn get_args() -> Result<Config> {
 }
 
 pub fn run(config: Config) -> Result<()> {
-    match config.show_full_year {
-        false => {
-            // When only a single month is shown we add the year into the header
-            for line in format_month(config.year.0, config.month.0, true, config.today) {
-                println!("{line}");
-            }
+    if !config.show_full_year {
+        // When only a single month is shown we add the year into the header
+        for line in format_month(config.year.0, config.month.0, true, config.today) {
+            println!("{line}");
         }
-        true => {
-            // When we render the whole year we use a special header
-            println!("{year:^60}", year = config.year.0);
+        return Ok(());
+    }
 
-            let months = (1..=12)
-                .map(|month| format_month(config.year.0, month, false, config.today))
-                .collect::<Vec<_>>();
-            let months_chunks = months.chunks(3);
-            let last_chunk_index = months_chunks.len() - 1;
+    // When we render the whole year we use a special header
+    println!("{year:^60}", year = config.year.0);
 
-            for (index, chunk) in months_chunks.enumerate() {
-                let [first, second, third] = chunk else {
-                    bail!("Invalid chunk")
-                };
+    let months = (1..=12)
+        .map(|month| format_month(config.year.0, month, false, config.today))
+        .collect::<Vec<_>>();
+    let months_chunks = months.chunks(3);
+    let last_chunk_index = months_chunks.len() - 1;
 
-                for line in 0..8 {
-                    print!("{}", first[line]);
-                    print!("{}", second[line]);
-                    print!("{}", third[line]);
-                    println!();
-                }
+    for (index, chunk) in months_chunks.enumerate() {
+        let [first, second, third] = chunk else {
+            bail!("Invalid chunk")
+        };
 
-                if index < last_chunk_index {
-                    println!();
-                }
-            }
+        for line in 0..8 {
+            print!("{}", first[line]);
+            print!("{}", second[line]);
+            print!("{}", third[line]);
+            println!();
+        }
+
+        if index < last_chunk_index {
+            println!();
         }
     }
 
