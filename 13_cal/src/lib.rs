@@ -1,5 +1,5 @@
 mod date;
-use ansi_term::Style;
+use ansi_term::{Style, Color};
 use anyhow::{bail, Ok, Result};
 use chrono::{Datelike, Local, NaiveDate, Weekday};
 use clap::{arg, Command};
@@ -74,16 +74,17 @@ pub fn get_args() -> Result<Config> {
 }
 
 pub fn run(config: Config) -> Result<()> {
+    // Rendering a single month annotated with year
     if !config.show_full_year {
-        // When only a single month is shown we add the year into the header
         for line in format_month(config.year.0, config.month.0, true, config.today) {
             println!("{line}");
         }
         return Ok(());
     }
 
-    // When we render the whole year we use a special header
-    println!("{year:^60}", year = config.year.0);
+    // Rendering the whole year, 3 months per line
+    println!("{year:^70}", year = Style::default().underline().paint(config.year.0.to_string()).to_string());
+    println!();
 
     let months = (1..=12)
         .map(|month| format_month(config.year.0, month, false, config.today))
@@ -148,10 +149,11 @@ fn format_month(
         format!("{month_text}")
     };
     let header_text = format!("{header_text:^20}  ");
+    let header_text = Color::Cyan.bold().paint(header_text).to_string();
     result.push(header_text);
 
     // Week processor - iterates over week days startung from week_start
-    let week_start = Weekday::Sun;
+    let week_start = Weekday::Mon;
     let mut weekday = week_start;
     let mut process_week = |process_day: &mut dyn FnMut(Weekday) -> String| -> String {
         let mut line = String::new();
@@ -168,9 +170,10 @@ fn format_month(
 
     // Labels
     result.push(process_week(&mut |weekday: Weekday| -> String {
-        let mut text = weekday.to_string();
-        text.truncate(2);
-        format!("{text:2} ")
+        let mut day_name = weekday.to_string();
+        day_name.truncate(2);
+        day_name = Color::Cyan.normal().paint(day_name).to_string();
+        format!("{day_name:2} ")
     }));
 
     // Dates table
