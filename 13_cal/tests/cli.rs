@@ -1,6 +1,6 @@
 use assert_cmd::Command;
 use predicates::prelude::*;
-use std::{error::Error, fs};
+use std::{error::Error, fs::{self, File}, io::Read};
 
 type TestResult = Result<(), Box<dyn Error>>;
 
@@ -141,12 +141,23 @@ fn partial_month() -> TestResult {
 
 // --------------------------------------------------
 fn run(args: &[&str], expected_file: &str) -> TestResult {
-    let expected = fs::read_to_string(expected_file)?;
-    Command::cargo_bin(PRG)?
+    // Extra work here due to lossy UTF
+    let mut file = File::open(expected_file)?;
+    let mut expected = Vec::new();
+    file.read_to_end(&mut expected)?;
+
+    let assert = Command::cargo_bin(PRG)?
         .args(args)
         .assert()
-        .success()
-        .stdout(expected);
+        .success();
+
+    let output = assert.get_output();
+    let stdout = &output.stdout;
+
+    dbg!(String::from_utf8_lossy(&expected));
+    dbg!(String::from_utf8_lossy(&stdout));
+    assert_eq!(&expected, stdout);
+
     Ok(())
 }
 
