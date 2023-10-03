@@ -30,9 +30,9 @@ pub fn get_args() -> Result<Config> {
         .author("FallenGameR")
         .about("Proleptic Gregorian month calendar with coloring")
         .args([
-            arg!([DATE]... "Year number (1-9999) or month name or number (1-12) followed by year number")
+            arg!([DATE]... "Year number (99-9999) OR month and year")
                 .help_heading("DATE as [[month] year]"),
-            arg!(-m --month <MONTH> "Month name or number (1-12)\nIs ignored if DATE specifies month")
+            arg!(-m --month <MONTH> "Month NAME or number (1-12)\nIgnored if DATE specifies month")
                 .value_parser(Date::parse_month),
             arg!(-y --show_full_year "Show calendar for the whole year")
                 .conflicts_with("month"),
