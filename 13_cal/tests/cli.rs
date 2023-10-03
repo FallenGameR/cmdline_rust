@@ -164,7 +164,7 @@ fn run(args: &[&str], expected_file: &str) -> TestResult {
 // --------------------------------------------------
 #[test]
 fn default_one_month() -> TestResult {
-    let cmd = Command::cargo_bin(PRG)?.assert().success();
+    let cmd = Command::cargo_bin(PRG)?.arg("-C").assert().success();
     let out = cmd.get_output();
     let stdout = String::from_utf8(out.stdout.clone())?;
     let lines: Vec<_> = stdout.split('\n').collect();
@@ -182,27 +182,27 @@ fn test_2_2020_leap_year() -> TestResult {
 // --------------------------------------------------
 #[test]
 fn test_4_2020() -> TestResult {
-    run(&["-m", "4", "2020"], "tests/expected/4-2020.txt")
+    run(&["-m", "4", "2020", "-C"], "tests/expected/4-2020.txt")
 }
 
 // --------------------------------------------------
 #[test]
 fn test_april_2020() -> TestResult {
-    run(&["2020", "-m", "april"], "tests/expected/4-2020.txt")
+    run(&["2020", "-m", "april", "-C"], "tests/expected/4-2020.txt")
 }
 
 // --------------------------------------------------
 #[test]
 fn test_2020() -> TestResult {
-    run(&["2020"], "tests/expected/2020.txt")
+    run(&["2020", "-C"], "tests/expected/2020.txt")
 }
 
 // --------------------------------------------------
 #[test]
 fn year() -> TestResult {
-    let cmd = Command::cargo_bin(PRG)?.arg("-y").assert().success();
+    let cmd = Command::cargo_bin(PRG)?.args(["-y", "-C"]).assert().success();
     let stdout = String::from_utf8(cmd.get_output().stdout.clone())?;
     let lines: Vec<&str> = stdout.split('\n').collect();
-    assert_eq!(lines.len(), 37);
+    assert_eq!(lines.len(), 38);
     Ok(())
 }
