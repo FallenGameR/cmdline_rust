@@ -224,36 +224,36 @@ mod tests {
     fn test_format_month() {
         let leap_february = vec![
             "   February 2020      ",
-            "Su Mo Tu We Th Fr Sa  ",
-            "                   1  ",
-            " 2  3  4  5  6  7  8  ",
-            " 9 10 11 12 13 14 15  ",
-            "16 17 18 19 20 21 22  ",
-            "23 24 25 26 27 28 29  ",
+            "Mo Tu We Th Fr Sa Su  ",
+            "                1  2  ",
+            " 3  4  5  6  7  8  9  ",
+            "10 11 12 13 14 15 16  ",
+            "17 18 19 20 21 22 23  ",
+            "24 25 26 27 28 29     ",
             "                      ",
         ];
         assert_eq!(format_month(2020, 2, None, true, false), leap_february);
 
         let may = vec![
             "        May           ",
-            "Su Mo Tu We Th Fr Sa  ",
-            "                1  2  ",
-            " 3  4  5  6  7  8  9  ",
-            "10 11 12 13 14 15 16  ",
-            "17 18 19 20 21 22 23  ",
-            "24 25 26 27 28 29 30  ",
-            "31                    ",
+            "Mo Tu We Th Fr Sa Su  ",
+            "             1  2  3  ",
+            " 4  5  6  7  8  9 10  ",
+            "11 12 13 14 15 16 17  ",
+            "18 19 20 21 22 23 24  ",
+            "25 26 27 28 29 30 31  ",
+            "                      ",
         ];
         assert_eq!(format_month(2020, 5, None, false, false), may);
 
         let april_hl = vec![
             "     April 2021       ",
-            "Su Mo Tu We Th Fr Sa  ",
-            "             1  2  3  ",
-            " 4  5  6 \u{1b}[7m 7\u{1b}[0m  8  9 10  ",
-            "11 12 13 14 15 16 17  ",
-            "18 19 20 21 22 23 24  ",
-            "25 26 27 28 29 30     ",
+            "Mo Tu We Th Fr Sa Su  ",
+            "          1  2  3  4  ",
+            " 5  6 \u{1b}[7m 7\u{1b}[0m  8  9 10 11  ",
+            "12 13 14 15 16 17 18  ",
+            "19 20 21 22 23 24 25  ",
+            "26 27 28 29 30        ",
             "                      ",
         ];
         let today = NaiveDate::from_ymd_opt(2021, 4, 7).unwrap();
