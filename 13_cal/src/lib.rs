@@ -152,7 +152,7 @@ fn format_month(
     let header_text = Color::Cyan.bold().paint(header_text).to_string();
     result.push(header_text);
 
-    // Week processor - iterates over week days startung from week_start
+    // Week processor - iterates over week days starting from week_start
     let week_start = Weekday::Mon;
     let mut weekday = week_start;
     let mut process_week = |process_day: &mut dyn FnMut(Weekday) -> String| -> String {
@@ -199,10 +199,7 @@ fn format_month(
     }
 
     // Pad for 8 lines per week representation
-    for _ in result.len()..8 {
-        result.push(format!("{:20}  ", " "));
-    }
-
+    result.resize_with(8, || format!("{:20}  ", " "));
     result
 }
 
