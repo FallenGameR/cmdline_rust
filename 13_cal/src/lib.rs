@@ -82,7 +82,7 @@ pub fn get_args() -> Result<Config> {
 pub fn run(config: Config) -> Result<()> {
     // Rendering a single month annotated with year
     if !config.show_full_year {
-        for line in format_month(config.year.0, config.month.0, true, config.today) {
+        for line in format_month(config.year.0, config.month.0, config.today, true) {
             println!("{line}");
         }
         return Ok(());
@@ -93,7 +93,7 @@ pub fn run(config: Config) -> Result<()> {
     println!();
 
     let months = (1..=MONTHS_IN_YEAR)
-        .map(|month| format_month(config.year.0, month, false, config.today))
+        .map(|month| format_month(config.year.0, month, config.today, false))
         .collect::<Vec<_>>();
     let months_chunks = months.chunks(YEAR_WIDTH_IN_COLUMNS);
     let last_chunk_index = months_chunks.len() - 1;
@@ -139,8 +139,8 @@ pub fn run(config: Config) -> Result<()> {
 fn format_month(
     year: i32,
     month: u32,
-    add_year_annitation: bool,
     highlighted_day: NaiveDate,
+    add_year_annotation: bool,
 ) -> Vec<String> {
     let mut result = Vec::with_capacity(WEEK_HEIGHT);
     let mut date = NaiveDate::from_ymd_opt(year, month, 1).expect("Date must be valid");
@@ -149,7 +149,7 @@ fn format_month(
     let month_text = date::MONTH_NAMES
         .get(date.month0() as usize)
         .expect("Date must be valid");
-    let header_text = if add_year_annitation {
+    let header_text = if add_year_annotation {
         format!("{month_text} {year}")
     } else {
         format!("{month_text}")
@@ -228,7 +228,7 @@ mod tests {
             "23 24 25 26 27 28 29  ",
             "                      ",
         ];
-        assert_eq!(format_month(2020, 2, true, today), leap_february);
+        assert_eq!(format_month(2020, 2, today, true), leap_february);
 
         let may = vec![
             "        May           ",
@@ -240,7 +240,7 @@ mod tests {
             "24 25 26 27 28 29 30  ",
             "31                    ",
         ];
-        assert_eq!(format_month(2020, 5, false, today), may);
+        assert_eq!(format_month(2020, 5, today, false), may);
 
         let april_hl = vec![
             "     April 2021       ",
@@ -253,6 +253,6 @@ mod tests {
             "                      ",
         ];
         let today = NaiveDate::from_ymd_opt(2021, 4, 7).unwrap();
-        assert_eq!(format_month(2021, 4, true, today), april_hl);
+        assert_eq!(format_month(2021, 4, today, true), april_hl);
     }
 }
