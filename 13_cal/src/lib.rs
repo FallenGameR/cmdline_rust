@@ -11,6 +11,7 @@ const YEAR_WIDTH: usize = 70;
 const WEEK_HEIGHT: usize = 8;
 const MONTHS_IN_YEAR: u32 = 12;
 const YEAR_WIDTH_IN_COLUMNS: usize = 3;
+const WEEK_START: Weekday = Weekday::Mon;
 
 #[derive(Debug)]
 pub struct Config {
@@ -82,7 +83,7 @@ pub fn get_args() -> Result<Config> {
 pub fn run(config: Config) -> Result<()> {
     // Rendering a single month annotated with year
     if !config.show_full_year {
-        for line in format_month(config.year.0, config.month.0, config.today, true) {
+        for line in format_month(config.year.0, config.month.0, Some(config.today), true, true) {
             println!("{line}");
         }
         return Ok(());
@@ -93,7 +94,7 @@ pub fn run(config: Config) -> Result<()> {
     println!();
 
     let months = (1..=MONTHS_IN_YEAR)
-        .map(|month| format_month(config.year.0, month, config.today, false))
+        .map(|month| format_month(config.year.0, month, Some(config.today), false, true))
         .collect::<Vec<_>>();
     let months_chunks = months.chunks(YEAR_WIDTH_IN_COLUMNS);
     let last_chunk_index = months_chunks.len() - 1;
@@ -139,8 +140,9 @@ pub fn run(config: Config) -> Result<()> {
 fn format_month(
     year: i32,
     month: u32,
-    highlighted_day: NaiveDate,
-    add_year_annotation: bool,
+    highlighted_day: Option<NaiveDate>,
+    do_year_annotation: bool,
+    do_colorization: bool,
 ) -> Vec<String> {
     let mut result = Vec::with_capacity(WEEK_HEIGHT);
     let mut date = NaiveDate::from_ymd_opt(year, month, 1).expect("Date must be valid");
@@ -149,24 +151,25 @@ fn format_month(
     let month_text = date::MONTH_NAMES
         .get(date.month0() as usize)
         .expect("Date must be valid");
-    let header_text = if add_year_annotation {
+    let mut header_text = if do_year_annotation {
         format!("{month_text} {year}")
     } else {
         format!("{month_text}")
     };
-    let header_text = format!("{header_text:^WEEK_WIDTH$}  ");
-    let header_text = Color::Cyan.bold().paint(header_text).to_string();
+    header_text = format!("{header_text:^WEEK_WIDTH$}  ");
+    if do_colorization {
+        header_text = Color::Cyan.bold().paint(header_text).to_string();
+    }
     result.push(header_text);
 
     // Week processor - iterates over week days starting from week_start
-    let week_start = Weekday::Mon;
-    let mut weekday = week_start;
+    let mut weekday = WEEK_START;
     let mut process_week = |process_day: &mut dyn FnMut(Weekday) -> String| -> String {
         let mut line = String::new();
         loop {
             line.push_str(&process_day(weekday));
             weekday = weekday.succ();
-            if weekday == week_start {
+            if weekday == WEEK_START {
                 break;
             }
         }
@@ -178,7 +181,9 @@ fn format_month(
     result.push(process_week(&mut |weekday: Weekday| -> String {
         let mut day_name = weekday.to_string();
         day_name.truncate(DAY_WIDTH);
-        day_name = Color::Cyan.normal().paint(day_name).to_string();
+        if do_colorization {
+            day_name = Color::Cyan.normal().paint(day_name).to_string();
+        }
         format!("{day_name:DAY_WIDTH$} ")
     }));
 
@@ -193,7 +198,7 @@ fn format_month(
 
             // Current day highlight
             let mut text = format!("{:DAY_WIDTH$}", date.day0() + 1);
-            if date == highlighted_day {
+            if Some(date) == highlighted_day {
                 text = Style::default().reverse().paint(text).to_string();
             }
             text.push(' ');
@@ -217,7 +222,6 @@ mod tests {
 
     #[test]
     fn test_format_month() {
-        let today = NaiveDate::from_ymd_opt(0, 1, 1).unwrap();
         let leap_february = vec![
             "   February 2020      ",
             "Su Mo Tu We Th Fr Sa  ",
@@ -228,7 +232,7 @@ mod tests {
             "23 24 25 26 27 28 29  ",
             "                      ",
         ];
-        assert_eq!(format_month(2020, 2, today, true), leap_february);
+        assert_eq!(format_month(2020, 2, None, true, false), leap_february);
 
         let may = vec![
             "        May           ",
@@ -240,7 +244,7 @@ mod tests {
             "24 25 26 27 28 29 30  ",
             "31                    ",
         ];
-        assert_eq!(format_month(2020, 5, today, false), may);
+        assert_eq!(format_month(2020, 5, None, false, false), may);
 
         let april_hl = vec![
             "     April 2021       ",
@@ -253,6 +257,6 @@ mod tests {
             "                      ",
         ];
         let today = NaiveDate::from_ymd_opt(2021, 4, 7).unwrap();
-        assert_eq!(format_month(2021, 4, today, true), april_hl);
+        assert_eq!(format_month(2021, 4, Some(today), true, false), april_hl);
     }
 }
