@@ -86,7 +86,7 @@ pub fn run(config: Config) -> Result<()> {
     println!("{year:^70}", year = Style::default().underline().paint(config.year.0.to_string()).to_string());
     println!();
 
-    let months = (1..=12)
+    let months = (1..=MONTHS_IN_YEAR)
         .map(|month| format_month(config.year.0, month, false, config.today))
         .collect::<Vec<_>>();
     let months_chunks = months.chunks(3);
@@ -113,6 +113,7 @@ pub fn run(config: Config) -> Result<()> {
 }
 
 const WEEK_ROWS: usize = 8;
+const MONTHS_IN_YEAR: u32 = 12;
 
 /// Renders a month as a vector of strings, 7 rows, 22 chars each
 ///
