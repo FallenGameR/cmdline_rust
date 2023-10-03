@@ -10,6 +10,7 @@ const WEEK_WIDTH: usize = 20;
 const YEAR_WIDTH: usize = 70;
 const WEEK_HEIGHT: usize = 8;
 const MONTHS_IN_YEAR: u32 = 12;
+const YEAR_WIDTH_IN_COLUMNS: usize = 3;
 
 #[derive(Debug)]
 pub struct Config {
@@ -94,7 +95,7 @@ pub fn run(config: Config) -> Result<()> {
     let months = (1..=MONTHS_IN_YEAR)
         .map(|month| format_month(config.year.0, month, false, config.today))
         .collect::<Vec<_>>();
-    let months_chunks = months.chunks(3);
+    let months_chunks = months.chunks(YEAR_WIDTH_IN_COLUMNS);
     let last_chunk_index = months_chunks.len() - 1;
 
     for (index, chunk) in months_chunks.enumerate() {
