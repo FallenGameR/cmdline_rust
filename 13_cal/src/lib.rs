@@ -136,7 +136,7 @@ fn format_month(
     add_year_annitation: bool,
     highlighted_day: NaiveDate,
 ) -> Vec<String> {
-    let mut result = Vec::new();
+    let mut result = Vec::with_capacity(8);
     let mut date = NaiveDate::from_ymd_opt(year, month, 1).expect("Date must be valid");
 
     // Header
