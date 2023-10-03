@@ -176,7 +176,7 @@ fn default_one_month() -> TestResult {
 // --------------------------------------------------
 #[test]
 fn test_2_2020_leap_year() -> TestResult {
-    run(&["-m", "2", "2020"], "tests/expected/2-2020.txt")
+    run(&["-m", "2", "2020", "-C"], "tests/expected/2-2020.txt")
 }
 
 // --------------------------------------------------
