@@ -97,7 +97,7 @@ pub fn run(config: Config) -> Result<()> {
             bail!("Invalid chunk")
         };
 
-        for line in 0..8 {
+        for line in 0..WEEK_ROWS {
             print!("{}", first[line]);
             print!("{}", second[line]);
             print!("{}", third[line]);
@@ -111,6 +111,8 @@ pub fn run(config: Config) -> Result<()> {
 
     Ok(())
 }
+
+const WEEK_ROWS: usize = 8;
 
 /// Renders a month as a vector of strings, 7 rows, 22 chars each
 ///
@@ -136,7 +138,7 @@ fn format_month(
     add_year_annitation: bool,
     highlighted_day: NaiveDate,
 ) -> Vec<String> {
-    let mut result = Vec::with_capacity(8);
+    let mut result = Vec::with_capacity(WEEK_ROWS);
     let mut date = NaiveDate::from_ymd_opt(year, month, 1).expect("Date must be valid");
 
     // Header
@@ -198,8 +200,8 @@ fn format_month(
         }));
     }
 
-    // Pad for 8 lines per week representation
-    result.resize_with(8, || format!("{:20}  ", " "));
+    // Insert spaces for uniform week text representation
+    result.resize_with(WEEK_ROWS, || format!("{:20}  ", " "));
     result
 }
 
