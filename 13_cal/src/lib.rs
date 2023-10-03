@@ -19,6 +19,7 @@ pub struct Config {
     month: Month,
     year: Year,
     show_full_year: bool,
+    use_color: bool,
 }
 
 pub fn get_args() -> Result<Config> {
@@ -35,6 +36,7 @@ pub fn get_args() -> Result<Config> {
                 .value_parser(Date::parse_month),
             arg!(-y --show_full_year "Show calendar for the whole year")
                 .conflicts_with("month"),
+            arg!(-C --dont_use_color "Don't use color during output")
         ])
         .get_matches();
 
@@ -77,13 +79,14 @@ pub fn get_args() -> Result<Config> {
         year: explicit_year.unwrap_or(Year(today.year())),
         show_full_year: matches.get_flag("show_full_year")
             || (explicit_month.is_none() && explicit_year.is_some()),
+        use_color: !matches.get_flag("dont_use_color"),
     })
 }
 
 pub fn run(config: Config) -> Result<()> {
     // Rendering a single month annotated with year
     if !config.show_full_year {
-        for line in format_month(config.year.0, config.month.0, Some(config.today), true, true) {
+        for line in format_month(config.year.0, config.month.0, Some(config.today), true, config.use_color) {
             println!("{line}");
         }
         return Ok(());
@@ -94,7 +97,7 @@ pub fn run(config: Config) -> Result<()> {
     println!();
 
     let months = (1..=MONTHS_IN_YEAR)
-        .map(|month| format_month(config.year.0, month, Some(config.today), false, true))
+        .map(|month| format_month(config.year.0, month, Some(config.today), false, config.use_color))
         .collect::<Vec<_>>();
     let months_chunks = months.chunks(YEAR_WIDTH_IN_COLUMNS);
     let last_chunk_index = months_chunks.len() - 1;
