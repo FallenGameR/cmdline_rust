@@ -5,7 +5,12 @@ use chrono::{Datelike, Local, NaiveDate, Weekday};
 use clap::{arg, Command};
 use date::{Date, Month, Year};
 
-// Field sizes reflect choises in the chrono crate
+const DAY_WIDTH: usize = 2;
+const WEEK_WIDTH: usize = 20;
+const YEAR_WIDTH: usize = 70;
+const WEEK_HEIGHT: usize = 8;
+const MONTHS_IN_YEAR: u32 = 12;
+
 #[derive(Debug)]
 pub struct Config {
     today: NaiveDate,
@@ -16,7 +21,7 @@ pub struct Config {
 
 pub fn get_args() -> Result<Config> {
     // CLI arguments
-    // We try to mimic 'wsl ncal 10 2023 -b'
+    // As a start I tried to mimic 'wsl ncal 10 2023 -b'
     let mut matches = Command::new("cal")
         .version("1.0")
         .author("FallenGameR")
@@ -83,7 +88,7 @@ pub fn run(config: Config) -> Result<()> {
     }
 
     // Rendering the whole year, 3 months per line
-    println!("{year:^70}", year = Style::default().underline().paint(config.year.0.to_string()).to_string());
+    println!("{year:^YEAR_WIDTH$}", year = Style::default().underline().paint(config.year.0.to_string()).to_string());
     println!();
 
     let months = (1..=MONTHS_IN_YEAR)
@@ -97,7 +102,7 @@ pub fn run(config: Config) -> Result<()> {
             bail!("Invalid chunk")
         };
 
-        for line in 0..WEEK_ROWS {
+        for line in 0..WEEK_HEIGHT {
             print!("{}", first[line]);
             print!("{}", second[line]);
             print!("{}", third[line]);
@@ -111,9 +116,6 @@ pub fn run(config: Config) -> Result<()> {
 
     Ok(())
 }
-
-const WEEK_ROWS: usize = 8;
-const MONTHS_IN_YEAR: u32 = 12;
 
 /// Renders a month as a vector of strings, 7 rows, 22 chars each
 ///
@@ -139,7 +141,7 @@ fn format_month(
     add_year_annitation: bool,
     highlighted_day: NaiveDate,
 ) -> Vec<String> {
-    let mut result = Vec::with_capacity(WEEK_ROWS);
+    let mut result = Vec::with_capacity(WEEK_HEIGHT);
     let mut date = NaiveDate::from_ymd_opt(year, month, 1).expect("Date must be valid");
 
     // Header
@@ -151,7 +153,7 @@ fn format_month(
     } else {
         format!("{month_text}")
     };
-    let header_text = format!("{header_text:^20}  ");
+    let header_text = format!("{header_text:^WEEK_WIDTH$}  ");
     let header_text = Color::Cyan.bold().paint(header_text).to_string();
     result.push(header_text);
 
@@ -174,9 +176,9 @@ fn format_month(
     // Labels
     result.push(process_week(&mut |weekday: Weekday| -> String {
         let mut day_name = weekday.to_string();
-        day_name.truncate(2);
+        day_name.truncate(DAY_WIDTH);
         day_name = Color::Cyan.normal().paint(day_name).to_string();
-        format!("{day_name:2} ")
+        format!("{day_name:DAY_WIDTH$} ")
     }));
 
     // Dates table
@@ -185,11 +187,11 @@ fn format_month(
         result.push(process_week(&mut |weekday: Weekday| -> String {
             // Space padding
             if date.weekday() != weekday || date.month0() != processed_month {
-                return format!("{:2} ", " ");
+                return format!("{:DAY_WIDTH$} ", " ");
             }
 
             // Current day highlight
-            let mut text = format!("{:2}", date.day0() + 1);
+            let mut text = format!("{:DAY_WIDTH$}", date.day0() + 1);
             if date == highlighted_day {
                 text = Style::default().reverse().paint(text).to_string();
             }
@@ -202,7 +204,7 @@ fn format_month(
     }
 
     // Insert spaces for uniform week text representation
-    result.resize_with(WEEK_ROWS, || format!("{:20}  ", " "));
+    result.resize_with(WEEK_HEIGHT, || format!("{:WEEK_WIDTH$}  ", " "));
     result
 }
 

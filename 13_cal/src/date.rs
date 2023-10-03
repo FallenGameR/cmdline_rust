@@ -1,8 +1,10 @@
 use anyhow::{bail, Ok, Result};
 
+// Month follows type convention in chrono crate
 #[derive(Debug, Clone, Copy)]
 pub struct Month(pub u32);
 
+// Year follows type convention in chrono crate
 #[derive(Debug, Clone, Copy)]
 pub struct Year(pub i32);
 
