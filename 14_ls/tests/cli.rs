@@ -5,7 +5,7 @@ use std::{error::Error, fs};
 
 type TestResult = Result<(), Box<dyn Error>>;
 
-const PRG: &str = "lsr";
+const PRG: &str = "ls";
 const HIDDEN: &str = "tests/inputs/.hidden";
 const EMPTY: &str = "tests/inputs/empty.txt";
 const BUSTLE: &str = "tests/inputs/bustle.txt";
