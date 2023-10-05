@@ -1,9 +1,9 @@
 mod owner;
 
-use clap::{arg, Command};
 use anyhow::Result;
+use clap::{arg, Command};
 use owner::Owner;
-use std::{path::PathBuf, fs};
+use std::{fs, path::{PathBuf, Path}};
 
 #[derive(Debug)]
 pub struct Config {
@@ -44,12 +44,18 @@ pub fn run(config: Config) -> Result<()> {
 fn find_files(paths: &[String], include_hidden: bool) -> Result<Vec<PathBuf>> {
     let mut result: Vec<PathBuf> = Vec::with_capacity(paths.len());
 
-    // Add path to result honoring the hidden flag
-    let mut add = |path: PathBuf| -> () {
-        let is_hidden = path.starts_with(".");
-        if include_hidden || !is_hidden {
-            result.push(path);
+    // Test if we should return that path while honoring the hidden flag
+    let should_return = |path: &Path| -> bool {
+        if include_hidden {
+            return true;
         }
+
+        let Some(file_name) = path.file_name() else {
+            return true;
+        };
+
+        let is_hidden = file_name.to_string_lossy().starts_with('.');
+        !is_hidden
     };
 
     for path in paths {
@@ -59,9 +65,10 @@ fn find_files(paths: &[String], include_hidden: bool) -> Result<Vec<PathBuf>> {
             continue;
         };
 
-        // Return file paths right away
-        if meta.is_file() && path.starts_with('.') {
-            add(PathBuf::from(path));
+        // Return explicitly passed and existing file paths right away
+        // We would ignore even the hidden flag here
+        if meta.is_file() {
+            result.push(PathBuf::from(path));
             continue;
         }
 
@@ -74,8 +81,13 @@ fn find_files(paths: &[String], include_hidden: bool) -> Result<Vec<PathBuf>> {
         // Return child paths of the folder
         for entry in dir {
             match entry {
-                Ok(entry) => add(entry.path()),
                 Err(error) => eprintln!("{error}: Can't enumerate this file system entry"),
+                Ok(entry) => {
+                    let path = entry.path();
+                    if should_return(&path) {
+                        result.push(path);
+                    }
+                },
             }
         }
     }
@@ -206,8 +218,7 @@ mod test {
         assert!(res.is_ok());
 
         let out = res.unwrap();
-        let lines: Vec<&str> =
-            out.split('\n').filter(|s| !s.is_empty()).collect();
+        let lines: Vec<&str> = out.split('\n').filter(|s| !s.is_empty()).collect();
         assert_eq!(lines.len(), 1);
 
         let line1 = lines.first().unwrap();
@@ -223,8 +234,7 @@ mod test {
         assert!(res.is_ok());
 
         let out = res.unwrap();
-        let mut lines: Vec<&str> =
-            out.split('\n').filter(|s| !s.is_empty()).collect();
+        let mut lines: Vec<&str> = out.split('\n').filter(|s| !s.is_empty()).collect();
         lines.sort_unstable();
         assert_eq!(lines.len(), 2);
 
