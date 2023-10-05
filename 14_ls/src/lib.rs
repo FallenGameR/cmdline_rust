@@ -1,10 +1,11 @@
 mod owner;
 
 use anyhow::Result;
+use chrono::{DateTime, Utc};
 use clap::{arg, Command};
 use owner::Owner;
 use tabular::{Table, Row};
-use std::{fs, path::{PathBuf, Path}};
+use std::{fs, path::{PathBuf, Path}, os::unix::prelude::MetadataExt};
 
 #[derive(Debug)]
 pub struct Config {
@@ -37,6 +38,11 @@ pub fn get_args() -> Result<Config> {
 
 pub fn run(config: Config) -> Result<()> {
     dbg!(config);
+
+    let paths = find_files(&config.paths, config.show_hidden);
+    let output = format_output(&paths)?;
+    println!("{output}");
+
     Ok(())
 }
 
@@ -94,8 +100,8 @@ fn find_files(paths: &[String], include_hidden: bool) -> Vec<PathBuf> {
     result
 }
 
-fn format_mode(_mode: u32) -> String {
-    todo!()
+fn format_mode(mode: u32) -> String {
+    "rwx---rwx".to_owned()
 }
 
 fn format_output(paths: &[PathBuf]) -> Result<String> {
@@ -104,19 +110,29 @@ fn format_output(paths: &[PathBuf]) -> Result<String> {
     let mut table = Table::new(fmt);
 
     for path in paths {
-        let metadata = path.metadata()?;
+        let meta = path.metadata()?;
 
-        /// TODO
+        let kind = if meta.is_dir() { "d" } else { "-" };
+        let mode = format_mode(meta.mode());
+        let links = meta.nlink();
+        let uid = meta.uid();
+        let user = uid.to_string();
+        let gid = meta.gid();
+        let group = gid.to_string();
+        let length = meta.len();
+        let modified = meta.modified()?;
+        let modified: DateTime<Utc> = modified.into();
+        let modified = modified.format("%b %d %y %H:%M");
 
         table.add_row(
             Row::new()
-                .with_cell(file_type) // 1 - directory or else
-                .with_cell(perms) // 2 - rwx permissions
-                .with_cell(metadata.nlink()) // 3 - number of hard links
+                .with_cell(kind) // 1 - directory or else
+                .with_cell(mode) // 2 - rwx permissions
+                .with_cell(links) // 3 - number of hard links
                 .with_cell(user) // 4 - onwer user name
                 .with_cell(group) // 5 - owner group name
-                .with_cell(metadata.len()) // 6 - file size in bytes
-                .with_cell(modified.format("%b %d %y %H:%M")) // 7 - last modified date
+                .with_cell(length) // 6 - file size in bytes
+                .with_cell(modified) // 7 - last modified date
                 .with_cell(path.display()), // 8 - path
         );
     }
