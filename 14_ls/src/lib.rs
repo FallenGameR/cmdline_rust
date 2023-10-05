@@ -3,6 +3,7 @@ mod owner;
 use anyhow::Result;
 use clap::{arg, Command};
 use owner::Owner;
+use tabular::Table;
 use std::{fs, path::{PathBuf, Path}};
 
 #[derive(Debug)]
@@ -97,8 +98,30 @@ fn format_mode(_mode: u32) -> String {
     todo!()
 }
 
-fn format_output(_paths: &[PathBuf]) -> Result<String> {
-    todo!()
+fn format_output(paths: &[PathBuf]) -> Result<String> {
+    //         1   2     3     4     5     6     7     8
+    let fmt = "{:<}{:<}  {:>}  {:<}  {:<}  {:>}  {:<}  {:<}";
+    let mut table = Table::new(fmt);
+
+    for path in paths {
+        let metadata = path.metadata()?;
+
+        /// TODO
+
+        table.add_row(
+            Row::new()
+                .with_cell(file_type) // 1
+                .with_cell(perms) // 2
+                .with_cell(metadata.nlink()) // 3
+                .with_cell(user) // 4
+                .with_cell(group) // 5
+                .with_cell(metadata.len()) // 6
+                .with_cell(modified.format("%b %d %y %H:%M")) // 7
+                .with_cell(path.display()), // 8
+        );
+    }
+
+    Ok(format!("{table}"))
 }
 
 fn mk_triple(_mode: u32, _owner: Owner) -> String {
