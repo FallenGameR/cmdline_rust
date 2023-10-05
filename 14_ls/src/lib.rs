@@ -41,8 +41,16 @@ pub fn run(config: Config) -> Result<()> {
 
 // it would not ever return an error since it handles all the errors by dumping them to STDERR
 // the signature needs to be updated
-fn find_files(paths: &[String], _show_hidden: bool) -> Result<Vec<PathBuf>> {
+fn find_files(paths: &[String], include_hidden: bool) -> Result<Vec<PathBuf>> {
     let mut result: Vec<PathBuf> = Vec::with_capacity(paths.len());
+
+    // Add path to result honoring the hidden flag
+    let mut add = |path: PathBuf| -> () {
+        let is_hidden = path.starts_with(".");
+        if include_hidden || !is_hidden {
+            result.push(path);
+        }
+    };
 
     for path in paths {
         // Making sure the path exists
@@ -52,8 +60,8 @@ fn find_files(paths: &[String], _show_hidden: bool) -> Result<Vec<PathBuf>> {
         };
 
         // Return file paths right away
-        if meta.is_file() {
-            result.push(PathBuf::from(path));
+        if meta.is_file() && path.starts_with('.') {
+            add(PathBuf::from(path));
             continue;
         }
 
@@ -66,7 +74,7 @@ fn find_files(paths: &[String], _show_hidden: bool) -> Result<Vec<PathBuf>> {
         // Return child paths of the folder
         for entry in dir {
             match entry {
-                Ok(entry) => result.push(entry.path()),
+                Ok(entry) => add(entry.path()),
                 Err(error) => eprintln!("{error}: Can't enumerate this file system entry"),
             }
         }
