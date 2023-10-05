@@ -3,7 +3,7 @@ mod owner;
 use anyhow::Result;
 use clap::{arg, Command};
 use owner::Owner;
-use tabular::Table;
+use tabular::{Table, Row};
 use std::{fs, path::{PathBuf, Path}};
 
 #[derive(Debug)]
@@ -110,14 +110,14 @@ fn format_output(paths: &[PathBuf]) -> Result<String> {
 
         table.add_row(
             Row::new()
-                .with_cell(file_type) // 1
-                .with_cell(perms) // 2
-                .with_cell(metadata.nlink()) // 3
-                .with_cell(user) // 4
-                .with_cell(group) // 5
-                .with_cell(metadata.len()) // 6
-                .with_cell(modified.format("%b %d %y %H:%M")) // 7
-                .with_cell(path.display()), // 8
+                .with_cell(file_type) // 1 - directory or else
+                .with_cell(perms) // 2 - rwx permissions
+                .with_cell(metadata.nlink()) // 3 - number of hard links
+                .with_cell(user) // 4 - onwer user name
+                .with_cell(group) // 5 - owner group name
+                .with_cell(metadata.len()) // 6 - file size in bytes
+                .with_cell(modified.format("%b %d %y %H:%M")) // 7 - last modified date
+                .with_cell(path.display()), // 8 - path
         );
     }
 
