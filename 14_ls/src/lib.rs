@@ -3,7 +3,7 @@ mod owner;
 use clap::{arg, Command};
 use anyhow::Result;
 use owner::Owner;
-use std::path::PathBuf;
+use std::{path::PathBuf, fs};
 
 #[derive(Debug)]
 pub struct Config {
@@ -39,8 +39,36 @@ pub fn run(config: Config) -> Result<()> {
     Ok(())
 }
 
-fn find_files(_paths: &[String], _show_hidden: bool) -> Result<Vec<PathBuf>> {
-    todo!()
+// it would not ever return an error since it handles all the errors by dumping them to STDERR
+// the signature needs to be updated
+fn find_files(paths: &[String], _show_hidden: bool) -> Result<Vec<PathBuf>> {
+    let mut result: Vec<PathBuf> = Vec::with_capacity(paths.len());
+
+    for path in paths {
+        let Ok(meta) = fs::metadata(path) else {
+            eprintln!("{path}: No such file or directory");
+            continue;
+        };
+
+        if meta.is_file() {
+            result.push(PathBuf::from(path));
+            continue;
+        }
+
+        let Ok(dir) = fs::read_dir(path) else {
+            eprintln!("{path}: Can't read this directory");
+            continue;
+        };
+
+        for entry in dir {
+            match entry {
+                Ok(entry) => result.push(entry.path()),
+                Err(error) => eprintln!("{error}: Can't enumerate this file system entry"),
+            }
+        }
+    }
+
+    Ok(result)
 }
 
 fn format_mode(_mode: u32) -> String {
