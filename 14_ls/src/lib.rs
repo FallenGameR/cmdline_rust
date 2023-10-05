@@ -45,21 +45,25 @@ fn find_files(paths: &[String], _show_hidden: bool) -> Result<Vec<PathBuf>> {
     let mut result: Vec<PathBuf> = Vec::with_capacity(paths.len());
 
     for path in paths {
+        // Making sure the path exists
         let Ok(meta) = fs::metadata(path) else {
             eprintln!("{path}: No such file or directory");
             continue;
         };
 
+        // Return file paths right away
         if meta.is_file() {
             result.push(PathBuf::from(path));
             continue;
         }
 
+        // Make sure folder can be read
         let Ok(dir) = fs::read_dir(path) else {
             eprintln!("{path}: Can't read this directory");
             continue;
         };
 
+        // Return child paths of the folder
         for entry in dir {
             match entry {
                 Ok(entry) => result.push(entry.path()),
