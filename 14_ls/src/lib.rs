@@ -2,6 +2,7 @@ mod owner;
 
 use clap::{arg, Command};
 use anyhow::Result;
+use owner::Owner;
 use std::path::PathBuf;
 
 #[derive(Debug)]
