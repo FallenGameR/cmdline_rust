@@ -39,10 +39,8 @@ pub fn run(config: Config) -> Result<()> {
     Ok(())
 }
 
-// it would not ever return an error since it handles all the errors by dumping them to STDERR
-// the signature needs to be updated
-fn find_files(paths: &[String], include_hidden: bool) -> Result<Vec<PathBuf>> {
-    let mut result: Vec<PathBuf> = Vec::with_capacity(paths.len());
+fn find_files(paths: &[String], include_hidden: bool) -> Vec<PathBuf> {
+    let mut result = Vec::with_capacity(paths.len());
 
     // Test if we should return that path while honoring the hidden flag
     let should_return = |path: &Path| -> bool {
@@ -92,7 +90,7 @@ fn find_files(paths: &[String], include_hidden: bool) -> Result<Vec<PathBuf>> {
         }
     }
 
-    Ok(result)
+    result
 }
 
 fn format_mode(_mode: u32) -> String {
@@ -117,9 +115,7 @@ mod test {
     fn test_find_files() {
         // Find all non-hidden entries in a directory
         let res = find_files(&["tests/inputs".to_string()], false);
-        assert!(res.is_ok());
         let mut filenames: Vec<_> = res
-            .unwrap()
             .iter()
             .map(|entry| entry.display().to_string())
             .collect();
@@ -136,9 +132,7 @@ mod test {
 
         // Any existing file should be found even if hidden
         let res = find_files(&["tests/inputs/.hidden".to_string()], false);
-        assert!(res.is_ok());
         let filenames: Vec<_> = res
-            .unwrap()
             .iter()
             .map(|entry| entry.display().to_string())
             .collect();
@@ -152,9 +146,7 @@ mod test {
             ],
             false,
         );
-        assert!(res.is_ok());
         let mut filenames: Vec<_> = res
-            .unwrap()
             .iter()
             .map(|entry| entry.display().to_string())
             .collect();
@@ -169,9 +161,7 @@ mod test {
     fn test_find_files_hidden() {
         // Find all entries in a directory including hidden
         let res = find_files(&["tests/inputs".to_string()], true);
-        assert!(res.is_ok());
         let mut filenames: Vec<_> = res
-            .unwrap()
             .iter()
             .map(|entry| entry.display().to_string())
             .collect();
