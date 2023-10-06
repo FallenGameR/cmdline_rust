@@ -50,6 +50,8 @@ pub fn run(config: Config) -> Result<()> {
         for path in paths {
             print!("{:8}", path.display());
         }
+
+        println!();
     }
 
     Ok(())
