@@ -74,9 +74,12 @@ fn find_files(paths: &[String], include_hidden: bool) -> Vec<PathBuf> {
 
     for path in paths {
         // Making sure the path exists
-        let Ok(meta) = fs::metadata(path) else {
-            eprintln!("{path}: No such file or directory");
-            continue;
+        let meta = match fs::metadata(path) {
+            Ok(meta) => meta,
+            Err(error) => {
+                eprintln!("{path}: {error}");
+                continue;
+            }
         };
 
         // Return explicitly passed and existing file paths right away
@@ -87,9 +90,12 @@ fn find_files(paths: &[String], include_hidden: bool) -> Vec<PathBuf> {
         }
 
         // Make sure folder can be read
-        let Ok(dir) = fs::read_dir(path) else {
-            eprintln!("{path}: Can't read this directory");
-            continue;
+        let dir = match fs::read_dir(path) {
+            Ok(dir) => dir,
+            Err(error) => {
+                eprintln!("{path}: {error}");
+                continue;
+            }
         };
 
         // Return child paths of the folder
