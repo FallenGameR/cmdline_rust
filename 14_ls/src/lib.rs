@@ -1,8 +1,12 @@
 use anyhow::Result;
 use chrono::{DateTime, Utc};
 use clap::{arg, Command};
-use tabular::{Table, Row};
-use std::{fs, path::{PathBuf, Path}, os::unix::prelude::MetadataExt};
+use std::{
+    fs,
+    os::unix::prelude::MetadataExt,
+    path::{Path, PathBuf},
+};
+use tabular::{Row, Table};
 
 const READ: u32 = 0b100;
 const WRITE: u32 = 0b010;
@@ -45,8 +49,7 @@ pub fn run(config: Config) -> Result<()> {
 
     if config.use_long_format {
         println!("{output}", output = format_output(&paths)?);
-    }
-    else {
+    } else {
         for path in paths {
             println!("{:8}", path.display());
         }
@@ -107,7 +110,7 @@ fn find_files(paths: &[String], include_hidden: bool) -> Vec<PathBuf> {
                     if should_return(&path) {
                         result.push(path);
                     }
-                },
+                }
             }
         }
     }
@@ -126,10 +129,14 @@ fn format_output(paths: &[PathBuf]) -> Result<String> {
         let kind = if meta.is_dir() { "d" } else { "-" };
         let mode = format_mode(meta.mode());
         let links = meta.nlink();
-        let user = users::get_user_by_uid(meta.uid()).expect("User must be defined");
-        let user = user.name().to_string_lossy();
-        let group = users::get_group_by_gid(meta.gid()).expect("Group must be defined");
-        let group = group.name().to_string_lossy();
+        let user = users::get_user_by_uid(meta.uid());
+        let user = user
+            .map(|u| u.name().to_string_lossy().into_owned())
+            .unwrap_or(meta.uid().to_string());
+        let group = users::get_group_by_gid(meta.gid());
+        let group = group
+            .map(|g| g.name().to_string_lossy().into_owned())
+            .unwrap_or(meta.gid().to_string());
         let length = meta.len();
         let modified = meta.modified()?;
         let modified: DateTime<Utc> = modified.into();
@@ -137,13 +144,13 @@ fn format_output(paths: &[PathBuf]) -> Result<String> {
 
         table.add_row(
             Row::new()
-                .with_cell(kind)            // 1 - directory or else
-                .with_cell(mode)            // 2 - rwx permissions
-                .with_cell(links)           // 3 - number of hard links
-                .with_cell(user)            // 4 - onwer user name
-                .with_cell(group)           // 5 - owner group name
-                .with_cell(length)          // 6 - file size in bytes
-                .with_cell(modified)        // 7 - last modified date
+                .with_cell(kind) // 1 - directory or else
+                .with_cell(mode) // 2 - rwx permissions
+                .with_cell(links) // 3 - number of hard links
+                .with_cell(user) // 4 - onwer user name
+                .with_cell(group) // 5 - owner group name
+                .with_cell(length) // 6 - file size in bytes
+                .with_cell(modified) // 7 - last modified date
                 .with_cell(path.display()), // 8 - path
         );
     }
