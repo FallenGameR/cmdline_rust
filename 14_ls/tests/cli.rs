@@ -193,6 +193,7 @@ fn dir_long(args: &[&str], expected: &[(&str, &str, &str)]) -> TestResult {
     }
 
     for entry in expected {
+        println!("Looking for {path}, {permissions}, {size}", path = entry.0, permissions = entry.1, size = entry.2);
         assert!(check.contains(entry));
     }
 
