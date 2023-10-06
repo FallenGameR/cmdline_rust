@@ -52,4 +52,7 @@ cargo build --timings
 
 # Auto fix non-idiomatic errors
 cargo clippy --fix -- --warn clippy::pedantic --allow clippy::missing-errors-doc --allow clippy::missing-panics-doc --allow clippy::needless-pass-by-value 
+
+# Generate docs site for your code
+cargo doc --open --document-private-items
 ```
