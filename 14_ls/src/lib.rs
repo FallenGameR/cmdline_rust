@@ -129,12 +129,10 @@ fn format_output(paths: &[PathBuf]) -> Result<String> {
         let kind = if meta.is_dir() { "d" } else { "-" };
         let mode = format_mode(meta.mode());
         let links = meta.nlink();
-        let user = users::get_user_by_uid(meta.uid());
-        let user = user
+        let user = users::get_user_by_uid(meta.uid())
             .map(|u| u.name().to_string_lossy().into_owned())
             .unwrap_or(meta.uid().to_string());
-        let group = users::get_group_by_gid(meta.gid());
-        let group = group
+        let group = users::get_group_by_gid(meta.gid())
             .map(|g| g.name().to_string_lossy().into_owned())
             .unwrap_or(meta.gid().to_string());
         let length = meta.len();
