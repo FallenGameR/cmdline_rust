@@ -183,11 +183,11 @@ fn dir_long(args: &[&str], expected: &[(&str, &str, &str)]) -> TestResult {
     let mut check = vec![];
     for line in lines {
         let parts: Vec<_> = line.split_whitespace().collect();
-        let path = parts.last().unwrap().clone();
-        let permissions = parts.first().unwrap().clone();
+        let path = *parts.last().unwrap();
+        let permissions = *parts.first().unwrap();
         let size = match permissions.chars().next() {
             Some('d') => "",
-            _ => parts.get(4).unwrap().clone(),
+            _ => *parts.get(4).unwrap(),
         };
         check.push((path, permissions, size));
     }
