@@ -1,11 +1,15 @@
-mod owner;
-
 use anyhow::Result;
 use chrono::{DateTime, Utc};
 use clap::{arg, Command};
-use owner::Owner;
 use tabular::{Table, Row};
 use std::{fs, path::{PathBuf, Path}, os::unix::prelude::MetadataExt};
+
+const READ: u32 = 0b100;
+const WRITE: u32 = 0b010;
+const EXECUTE: u32 = 0b001;
+const OTHER: u32 = 0;
+const GROUP: u32 = 3;
+const USER: u32 = 6;
 
 #[derive(Debug)]
 pub struct Config {
@@ -38,8 +42,15 @@ pub fn get_args() -> Result<Config> {
 
 pub fn run(config: Config) -> Result<()> {
     let paths = find_files(&config.paths, config.show_hidden);
-    let output = format_output(&paths)?;
-    println!("{output}");
+
+    if config.use_long_format {
+        println!("{output}", output = format_output(&paths)?);
+    }
+    else {
+        for path in paths {
+            print!("{:8}", path.display());
+        }
+    }
 
     Ok(())
 }
@@ -98,10 +109,6 @@ fn find_files(paths: &[String], include_hidden: bool) -> Vec<PathBuf> {
     result
 }
 
-fn format_mode(mode: u32) -> String {
-    "rwx---rwx".to_owned()
-}
-
 fn format_output(paths: &[PathBuf]) -> Result<String> {
     //         1   2     3     4     5     6     7     8
     let fmt = "{:<}{:<}  {:>}  {:<}  {:<}  {:>}  {:<}  {:<}";
@@ -138,14 +145,35 @@ fn format_output(paths: &[PathBuf]) -> Result<String> {
     Ok(format!("{table}"))
 }
 
-fn mk_triple(_mode: u32, _owner: Owner) -> String {
-    todo!()
+fn format_mode(mode: u32) -> String {
+    let render = |part: u32| -> String {
+        let mut result = String::with_capacity(3);
+
+        let print = |mask: u32, char: char| -> char {
+            if part & mask != 0 {
+                char
+            } else {
+                '-'
+            }
+        };
+
+        result.push(print(READ, 'r'));
+        result.push(print(WRITE, 'w'));
+        result.push(print(EXECUTE, 'x'));
+        result
+    };
+
+    let mut result = String::with_capacity(9);
+    result.push_str(&render(mode >> USER));
+    result.push_str(&render(mode >> GROUP));
+    result.push_str(&render(mode >> OTHER));
+    result
 }
 
 // --------------------------------------------------
 #[cfg(test)]
 mod test {
-    use super::{find_files, format_mode, format_output, mk_triple, Owner};
+    use super::{find_files, format_mode, format_output};
     use std::path::PathBuf;
 
     #[test]
@@ -275,14 +303,6 @@ mod test {
 
         let dir_line = lines.remove(0);
         long_match(dir_line, "tests/inputs/dir", "drwxr-xr-x", None);
-    }
-
-    #[test]
-    fn test_mk_triple() {
-        assert_eq!(mk_triple(0o751, Owner::User), "rwx");
-        assert_eq!(mk_triple(0o751, Owner::Group), "r-x");
-        assert_eq!(mk_triple(0o751, Owner::Other), "--x");
-        assert_eq!(mk_triple(0o600, Owner::Other), "---");
     }
 
     #[test]
