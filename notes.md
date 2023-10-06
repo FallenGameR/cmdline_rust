@@ -55,4 +55,8 @@ cargo clippy --fix -- --warn clippy::pedantic --allow clippy::missing-errors-doc
 
 # Generate docs site for your code
 cargo doc --open --document-private-items
+
+# Update all dependencies to the latest versions
+# Guidance after 1.72 is to commit the cargo.lock file for build repeatability
+cargo update
 ```
