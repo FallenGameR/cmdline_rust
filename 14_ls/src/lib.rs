@@ -48,10 +48,8 @@ pub fn run(config: Config) -> Result<()> {
     }
     else {
         for path in paths {
-            print!("{:8}", path.display());
+            println!("{:8}", path.display());
         }
-
-        println!();
     }
 
     Ok(())
